@@ -1,0 +1,7 @@
+name = "jira-timer-push"
+main = "src/worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+BUNDLE_ID = "danbasnett.JiraTimeTracker"
+USE_SANDBOX = "true"

@@ -6,14 +6,84 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3E4980112FC502C700E566DB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E4980102FC502C700E566DB /* WidgetKit.framework */; };
+		3E4980132FC502C700E566DB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E4980122FC502C700E566DB /* SwiftUI.framework */; };
+		3E4980202FC502C800E566DB /* JiraWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3E49800E2FC502C700E566DB /* JiraWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3E49801E2FC502C800E566DB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3E497FD82FC4FE3600E566DB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3E49800D2FC502C700E566DB;
+			remoteInfo = JiraWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3E4980252FC502C800E566DB /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				3E4980202FC502C800E566DB /* JiraWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		3E497FE02FC4FE3600E566DB /* JiraTimeTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JiraTimeTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3E49800E2FC502C700E566DB /* JiraWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = JiraWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		3E4980102FC502C700E566DB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		3E4980122FC502C700E566DB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		3E49802E2FC50FA100E566DB /* JiraWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JiraWidgetsExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3E4980212FC502C800E566DB /* Exceptions for "JiraWidgets" folder in "JiraWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3E49800D2FC502C700E566DB /* JiraWidgetsExtension */;
+		};
+		3E49802C2FC504A300E566DB /* Exceptions for "JiraTimeTracker" folder in "JiraWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Services/SharedData.swift,
+			);
+			target = 3E49800D2FC502C700E566DB /* JiraWidgetsExtension */;
+		};
+		3E4980322FC513CF00E566DB /* Exceptions for "JiraTimeTracker" folder in "JiraTimeTracker" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3E497FDF2FC4FE3600E566DB /* JiraTimeTracker */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		3E497FE22FC4FE3600E566DB /* JiraTimeTracker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3E4980322FC513CF00E566DB /* Exceptions for "JiraTimeTracker" folder in "JiraTimeTracker" target */,
+				3E49802C2FC504A300E566DB /* Exceptions for "JiraTimeTracker" folder in "JiraWidgetsExtension" target */,
+			);
 			path = JiraTimeTracker;
+			sourceTree = "<group>";
+		};
+		3E4980142FC502C700E566DB /* JiraWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3E4980212FC502C800E566DB /* Exceptions for "JiraWidgets" folder in "JiraWidgetsExtension" target */,
+			);
+			path = JiraWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -26,13 +96,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3E49800B2FC502C700E566DB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3E4980132FC502C700E566DB /* SwiftUI.framework in Frameworks */,
+				3E4980112FC502C700E566DB /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		3E497FD72FC4FE3600E566DB = {
 			isa = PBXGroup;
 			children = (
+				3E49802E2FC50FA100E566DB /* JiraWidgetsExtension.entitlements */,
 				3E497FE22FC4FE3600E566DB /* JiraTimeTracker */,
+				3E4980142FC502C700E566DB /* JiraWidgets */,
+				3E49800F2FC502C700E566DB /* Frameworks */,
 				3E497FE12FC4FE3600E566DB /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +123,18 @@
 			isa = PBXGroup;
 			children = (
 				3E497FE02FC4FE3600E566DB /* JiraTimeTracker.app */,
+				3E49800E2FC502C700E566DB /* JiraWidgetsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3E49800F2FC502C700E566DB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3E4980102FC502C700E566DB /* WidgetKit.framework */,
+				3E4980122FC502C700E566DB /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,10 +147,12 @@
 				3E497FDC2FC4FE3600E566DB /* Sources */,
 				3E497FDD2FC4FE3600E566DB /* Frameworks */,
 				3E497FDE2FC4FE3600E566DB /* Resources */,
+				3E4980252FC502C800E566DB /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				3E49801F2FC502C800E566DB /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3E497FE22FC4FE3600E566DB /* JiraTimeTracker */,
@@ -69,6 +163,28 @@
 			productName = JiraTimeTracker;
 			productReference = 3E497FE02FC4FE3600E566DB /* JiraTimeTracker.app */;
 			productType = "com.apple.product-type.application";
+		};
+		3E49800D2FC502C700E566DB /* JiraWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E4980222FC502C800E566DB /* Build configuration list for PBXNativeTarget "JiraWidgetsExtension" */;
+			buildPhases = (
+				3E49800A2FC502C700E566DB /* Sources */,
+				3E49800B2FC502C700E566DB /* Frameworks */,
+				3E49800C2FC502C700E566DB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3E4980142FC502C700E566DB /* JiraWidgets */,
+			);
+			name = JiraWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = JiraWidgetsExtension;
+			productReference = 3E49800E2FC502C700E566DB /* JiraWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -81,6 +197,9 @@
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					3E497FDF2FC4FE3600E566DB = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+					3E49800D2FC502C700E566DB = {
 						CreatedOnToolsVersion = 26.4.1;
 					};
 				};
@@ -100,12 +219,20 @@
 			projectRoot = "";
 			targets = (
 				3E497FDF2FC4FE3600E566DB /* JiraTimeTracker */,
+				3E49800D2FC502C700E566DB /* JiraWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		3E497FDE2FC4FE3600E566DB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3E49800C2FC502C700E566DB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +249,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3E49800A2FC502C700E566DB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		3E49801F2FC502C800E566DB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3E49800D2FC502C700E566DB /* JiraWidgetsExtension */;
+			targetProxy = 3E49801E2FC502C800E566DB /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		3E497FE92FC4FE3700E566DB /* Debug */ = {
@@ -246,6 +388,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = JiraTimeTracker/JiraTimeTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = G3LMQ6HT64;
@@ -254,6 +397,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = JiraTimeTracker/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -290,6 +434,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = JiraTimeTracker/JiraTimeTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = G3LMQ6HT64;
@@ -298,6 +443,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = JiraTimeTracker/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -329,6 +475,85 @@
 			};
 			name = Release;
 		};
+		3E4980232FC502C800E566DB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = JiraWidgetsExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G3LMQ6HT64;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = JiraWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = JiraWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = danbasnett.JiraTimeTracker.JiraWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3E4980242FC502C800E566DB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = JiraWidgetsExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G3LMQ6HT64;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = JiraWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = JiraWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = danbasnett.JiraTimeTracker.JiraWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -346,6 +571,15 @@
 			buildConfigurations = (
 				3E497FEC2FC4FE3700E566DB /* Debug */,
 				3E497FED2FC4FE3700E566DB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E4980222FC502C800E566DB /* Build configuration list for PBXNativeTarget "JiraWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E4980232FC502C800E566DB /* Debug */,
+				3E4980242FC502C800E566DB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira Time Tracker - Privacy Policy</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.6; }
+        h1 { font-size: 1.8em; }
+        h2 { font-size: 1.3em; margin-top: 2em; }
+        p { margin: 0.8em 0; }
+        .date { color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>Jira Time Tracker - Privacy Policy</h1>
+    <p class="date">Last updated: May 26, 2026</p>
+
+    <h2>Overview</h2>
+    <p>Jira Time Tracker is a productivity app that helps you track time spent on Jira issues. Your privacy is important to us. This policy explains what data the app accesses and how it is handled.</p>
+
+    <h2>Data Collection</h2>
+    <p>Jira Time Tracker does <strong>not</strong> collect, store, or transmit any personal data to the developer. The app does not include analytics, advertising, or tracking of any kind.</p>
+
+    <h2>Jira Credentials</h2>
+    <p>Your Jira instance URL, email, and API token are stored securely in the device Keychain. These credentials are only used to communicate directly with your Jira Cloud instance and are never sent to any other server.</p>
+
+    <h2>iCloud Sync</h2>
+    <p>The app uses Apple iCloud (CloudKit) to sync your active timer state between your devices. This data is stored in your private iCloud container and is only accessible to your Apple ID. The developer has no access to this data.</p>
+
+    <h2>Push Notifications</h2>
+    <p>When you start a timer on your Mac, the app sends a push notification to your iPhone to display a Live Activity. This notification is routed through Apple's Push Notification service (APNs). The push notification contains only the issue key, summary, and start time of your timer.</p>
+
+    <h2>Peer-to-Peer Sync</h2>
+    <p>The app uses Apple's MultipeerConnectivity framework to sync timer state between nearby devices on the same iCloud account. This communication is local and peer-to-peer. No data is sent to external servers.</p>
+
+    <h2>Third-Party Services</h2>
+    <p>The app communicates with the following services:</p>
+    <ul>
+        <li><strong>Atlassian Jira Cloud</strong> — to fetch issues and log work time, using credentials you provide</li>
+        <li><strong>Apple iCloud</strong> — for cross-device sync via CloudKit</li>
+        <li><strong>Apple Push Notification service</strong> — for Live Activity updates</li>
+    </ul>
+    <p>No data is shared with any other third parties.</p>
+
+    <h2>Data Storage</h2>
+    <p>All data is stored locally on your device (Keychain, UserDefaults) or in your private iCloud container. No data is stored on servers controlled by the developer.</p>
+
+    <h2>Changes to This Policy</h2>
+    <p>This policy may be updated from time to time. Any changes will be reflected on this page with an updated date.</p>
+
+    <h2>Contact</h2>
+    <p>If you have questions about this privacy policy, contact <a href="mailto:danielbasnett@gmail.com">danielbasnett@gmail.com</a>.</p>
+</body>
+</html>
