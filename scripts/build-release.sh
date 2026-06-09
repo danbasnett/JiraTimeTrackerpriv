@@ -33,39 +33,25 @@ fi
 
 echo "==> Found app at: $APP_PATH"
 
-echo "==> Creating .pkg installer..."
-PKG_PATH="$BUILD_DIR/$PROJECT_NAME.pkg"
-pkgbuild \
-    --root "$APP_PATH" \
-    --identifier "com.danbasnett.JiraTimeTracker" \
-    --version "1.0" \
-    --install-location "/Applications/$APP_NAME" \
-    --component-plist /dev/stdin \
-    "$PKG_PATH" <<'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<array>
-    <dict>
-        <key>BundleHasStrictIdentifier</key>
-        <false/>
-        <key>BundleIsRelocatable</key>
-        <true/>
-        <key>BundleOverwriteAction</key>
-        <string>upgrade</string>
-        <key>RootRelativeBundlePath</key>
-        <string>JiraTimeTracker.app</string>
-    </dict>
-</array>
-</plist>
-PLIST
-
 echo "==> Creating .zip archive..."
 ZIP_PATH="$BUILD_DIR/$PROJECT_NAME.zip"
 cd "$(dirname "$APP_PATH")"
 zip -r -y "$ZIP_PATH" "$APP_NAME"
 
+echo "==> Creating .pkg installer..."
+PKG_ROOT="$BUILD_DIR/pkg-root"
+mkdir -p "$PKG_ROOT/Applications"
+cp -R "$APP_PATH" "$PKG_ROOT/Applications/"
+
+PKG_PATH="$BUILD_DIR/$PROJECT_NAME.pkg"
+pkgbuild \
+    --root "$PKG_ROOT" \
+    --identifier "com.danbasnett.JiraTimeTracker" \
+    --version "1.0" \
+    --install-location "/" \
+    "$PKG_PATH"
+
 echo ""
 echo "==> Build complete!"
-echo "    .pkg: $PKG_PATH"
-echo "    .zip: $ZIP_PATH"
+echo "    .zip: $ZIP_PATH  (recommended — just unzip and drag to Applications)"
+echo "    .pkg: $PKG_PATH  (installer — will prompt for password once)"

@@ -38,17 +38,20 @@ jobs:
           APP_PATH=$(find build/DerivedData -name "JiraTimeTracker.app" -type d | head -1)
           echo "App found at: $APP_PATH"
 
-          # Create .pkg
-          pkgbuild \
-            --root "$APP_PATH" \
-            --identifier "com.danbasnett.JiraTimeTracker" \
-            --version "${GITHUB_REF_NAME#v}" \
-            --install-location "/Applications/JiraTimeTracker.app" \
-            build/JiraTimeTracker.pkg
-
           # Create .zip
           cd "$(dirname "$APP_PATH")"
           zip -r -y "$GITHUB_WORKSPACE/build/JiraTimeTracker.zip" "JiraTimeTracker.app"
+          cd "$GITHUB_WORKSPACE"
+
+          # Create .pkg with proper staging directory
+          mkdir -p build/pkg-root/Applications
+          cp -R "$APP_PATH" build/pkg-root/Applications/
+          pkgbuild \
+            --root build/pkg-root \
+            --identifier "com.danbasnett.JiraTimeTracker" \
+            --version "${GITHUB_REF_NAME#v}" \
+            --install-location "/" \
+            build/JiraTimeTracker.pkg
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
