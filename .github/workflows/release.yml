@@ -19,6 +19,28 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
 
+      - name: Import signing certificate
+        env:
+          CERTIFICATE_P12: ${{ secrets.CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
+          CERT_PATH=$RUNNER_TEMP/certificate.p12
+
+          echo "$CERTIFICATE_P12" | base64 --decode > "$CERT_PATH"
+
+          security create-keychain -p "" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "" "$KEYCHAIN_PATH"
+
+          security import "$CERT_PATH" \
+            -P "$CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
       - name: Build
         run: |
           xcodebuild \
@@ -27,23 +49,45 @@ jobs:
             -configuration Release \
             -derivedDataPath build/DerivedData \
             -destination "generic/platform=macOS" \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            OTHER_CODE_SIGN_FLAGS="--options=runtime" \
             ONLY_ACTIVE_ARCH=NO \
             clean build
+
+      - name: Notarize
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          APP_PATH=$(find build/DerivedData -name "JiraTimeTracker.app" -type d | head -1)
+          echo "App found at: $APP_PATH"
+
+          # Create zip for notarization submission
+          ditto -c -k --keepParent "$APP_PATH" build/notarize.zip
+
+          # Submit and wait
+          xcrun notarytool submit build/notarize.zip \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          # Staple the ticket to the app
+          xcrun stapler staple "$APP_PATH"
+
+          rm build/notarize.zip
 
       - name: Package
         run: |
           APP_PATH=$(find build/DerivedData -name "JiraTimeTracker.app" -type d | head -1)
-          echo "App found at: $APP_PATH"
 
           # Create .zip
           cd "$(dirname "$APP_PATH")"
           zip -r -y "$GITHUB_WORKSPACE/build/JiraTimeTracker.zip" "JiraTimeTracker.app"
           cd "$GITHUB_WORKSPACE"
 
-          # Create .pkg with proper staging directory
+          # Create .pkg
           mkdir -p build/pkg-root/Applications
           cp -R "$APP_PATH" build/pkg-root/Applications/
           pkgbuild \
@@ -71,3 +115,7 @@ jobs:
           path: |
             build/JiraTimeTracker.pkg
             build/JiraTimeTracker.zip
+
+      - name: Cleanup keychain
+        if: always()
+        run: security delete-keychain $RUNNER_TEMP/signing.keychain-db 2>/dev/null || true
