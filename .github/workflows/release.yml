@@ -41,7 +41,7 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
 
-      - name: Build
+      - name: Build (unsigned)
         run: |
           xcodebuild \
             -project JiraTimeTracker.xcodeproj \
@@ -49,15 +49,35 @@ jobs:
             -configuration Release \
             -derivedDataPath build/DerivedData \
             -destination "generic/platform=macOS" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Developer ID Application" \
-            CODE_SIGNING_REQUIRED=YES \
-            CODE_SIGNING_ALLOWED=YES \
-            OTHER_CODE_SIGN_FLAGS="--options=runtime" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
             ONLY_ACTIVE_ARCH=NO \
             clean build
+
+      - name: Sign app
+        run: |
+          APP_PATH=$(find build/DerivedData -name "JiraTimeTracker.app" -type d | head -1)
+          echo "App found at: $APP_PATH"
+
+          # Sign the widget extension first
+          WIDGET_PATH="$APP_PATH/Contents/PlugIns/JiraWidgetsExtension.appex"
+          if [ -d "$WIDGET_PATH" ]; then
+            codesign --deep --force --options=runtime \
+              --sign "Developer ID Application" \
+              --entitlements JiraWidgets/JiraWidgets.entitlements \
+              "$WIDGET_PATH"
+          fi
+
+          # Sign the main app
+          codesign --deep --force --options=runtime \
+            --sign "Developer ID Application" \
+            --entitlements JiraTimeTracker/JiraTimeTracker.entitlements \
+            "$APP_PATH"
+
+          # Verify
+          codesign --verify --deep --strict "$APP_PATH"
+          echo "Signing verified successfully"
 
       - name: Notarize
         env:
@@ -66,21 +86,16 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           APP_PATH=$(find build/DerivedData -name "JiraTimeTracker.app" -type d | head -1)
-          echo "App found at: $APP_PATH"
 
-          # Create zip for notarization submission
           ditto -c -k --keepParent "$APP_PATH" build/notarize.zip
 
-          # Submit and wait
           xcrun notarytool submit build/notarize.zip \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_PASSWORD" \
             --team-id "$APPLE_TEAM_ID" \
             --wait
 
-          # Staple the ticket to the app
           xcrun stapler staple "$APP_PATH"
-
           rm build/notarize.zip
 
       - name: Package
