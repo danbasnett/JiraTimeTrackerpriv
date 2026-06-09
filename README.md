@@ -55,7 +55,7 @@ JiraTimeTracker connects to **Jira Cloud** (Atlassian-hosted). You need three th
 
 ### Getting an API token
 
-1. Go to [https://id.atlassian.net/manage-profile/security/api-tokens](https://id.atlassian.net/manage-profile/security/api-tokens)
+1. Go to [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
 2. Click **Create API token**
 3. Give it a label (e.g. "JiraTimeTracker")
 4. Copy the token

@@ -34,7 +34,7 @@ struct SettingsView: View {
             }
 
             Section {
-                Link(destination: URL(string: "https://id.atlassian.net/manage-profile/security/api-tokens")!) {
+                Link(destination: URL(string: "https://id.atlassian.com/manage-profile/security/api-tokens")!) {
                     HStack {
                         Label("Create an API Token", systemImage: "key.fill")
                         Spacer()
