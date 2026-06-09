@@ -154,6 +154,7 @@ struct TaskListView: View {
                     Text(filter.rawValue).tag(filter)
                 }
             }
+            .labelsHidden()
             .pickerStyle(.segmented)
             .frame(maxWidth: 200)
 

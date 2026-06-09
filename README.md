@@ -6,6 +6,12 @@ A lightweight macOS menu bar app for tracking time on Jira issues and logging wo
 ![Swift](https://img.shields.io/badge/Swift-5.9-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+<p align="center">
+  <img src="screenshots/main-window.png" width="420" alt="Main window with task list">
+  &nbsp;&nbsp;
+  <img src="screenshots/menu-bar-timer.png" width="260" alt="Menu bar with active timer">
+</p>
+
 ## Features
 
 - **Menu bar timer** — Start, stop, and log time without leaving your current workflow
@@ -63,6 +69,10 @@ JiraTimeTracker connects to **Jira Cloud** (Atlassian-hosted). You need three th
 
 That's it. Your issues will load and the menu bar icon (clock) will appear.
 
+<p align="center">
+  <img src="screenshots/setup.png" width="420" alt="Welcome and setup screen">
+</p>
+
 ## Usage
 
 ### Menu bar
@@ -75,6 +85,12 @@ Click the **clock icon** in your menu bar to:
 - Stop and log time with a work description
 - Filter by project, status, or assignee
 
+<p align="center">
+  <img src="screenshots/menu-bar.png" width="260" alt="Menu bar dropdown">
+  &nbsp;&nbsp;
+  <img src="screenshots/menu-bar-timer.png" width="260" alt="Menu bar with active timer">
+</p>
+
 ### Main window
 
 Open the full window from the menu bar or by clicking the app icon. The main window provides:
@@ -82,6 +98,12 @@ Open the full window from the menu bar or by clicking the app icon. The main win
 - **Search** — Full-text search across issue summaries
 - **Filters** — Open / All / Done status categories, specific status names, projects, and "Mine" toggle
 - **Timer controls** — Start/stop timers, add work descriptions, discard or log
+
+When a timer is running, it appears at the top of the window:
+
+<p align="center">
+  <img src="screenshots/active-timer.png" width="500" alt="Active timer with work description">
+</p>
 
 ### Timer workflow
 
