@@ -19,21 +19,29 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
 
-      - name: Import signing certificate
+      - name: Import signing certificates
         env:
           CERTIFICATE_P12: ${{ secrets.CERTIFICATE_P12 }}
+          INSTALLER_CERTIFICATE_P12: ${{ secrets.INSTALLER_CERTIFICATE_P12 }}
           CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
         run: |
           KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
-          CERT_PATH=$RUNNER_TEMP/certificate.p12
+          APP_CERT=$RUNNER_TEMP/app-certificate.p12
+          INSTALLER_CERT=$RUNNER_TEMP/installer-certificate.p12
 
-          echo "$CERTIFICATE_P12" | base64 --decode > "$CERT_PATH"
+          echo "$CERTIFICATE_P12" | base64 --decode > "$APP_CERT"
+          echo "$INSTALLER_CERTIFICATE_P12" | base64 --decode > "$INSTALLER_CERT"
 
           security create-keychain -p "" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "" "$KEYCHAIN_PATH"
 
-          security import "$CERT_PATH" \
+          security import "$APP_CERT" \
+            -P "$CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+
+          security import "$INSTALLER_CERT" \
             -P "$CERTIFICATE_PASSWORD" \
             -A -t cert -f pkcs12 \
             -k "$KEYCHAIN_PATH"
