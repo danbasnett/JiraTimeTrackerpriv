@@ -168,11 +168,11 @@ struct SettingsView: View {
             groupDefaults.synchronize()
         }
 
-        if let appURL = Bundle.main.bundleURL as NSURL? {
-            NSWorkspace.shared.recycle([appURL as URL]) { _, _ in }
-        }
+        let appPath = Bundle.main.bundlePath
+        let script = "sleep 1 && mv \"\(appPath)\" ~/.Trash/"
+        Process.launchedProcess(launchPath: "/bin/bash", arguments: ["-c", script])
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             NSApplication.shared.terminate(nil)
         }
     }
