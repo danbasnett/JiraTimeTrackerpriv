@@ -28,8 +28,15 @@ A lightweight macOS menu bar app for tracking time on Jira issues and logging wo
 1. Go to [Releases](../../releases)
 2. Download **JiraTimeTracker.zip**
 3. Unzip and drag **JiraTimeTracker.app** to your `/Applications` folder
+4. Before opening, run this in Terminal to clear the quarantine flag:
+   ```bash
+   xattr -cr /Applications/JiraTimeTracker.app
+   ```
+5. Open the app normally
 
-> **Note:** Since the app isn't signed with an Apple Developer certificate, macOS will block it the first time. Right-click the app → **Open** → click **Open** in the dialog. You only need to do this once.
+> **Why step 4?** macOS quarantines apps downloaded from the internet. Since this app isn't signed with an Apple Developer certificate, Gatekeeper will block it. The `xattr -cr` command removes that quarantine so it opens without warnings. You only need to do this once.
+>
+> Alternatively, you can skip step 4 and instead right-click the app → **Open** → click **Open** in the dialog.
 
 A `.pkg` installer is also available if you prefer — it will prompt for your password once to install to `/Applications`.
 

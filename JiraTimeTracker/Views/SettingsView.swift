@@ -169,8 +169,12 @@ struct SettingsView: View {
         }
 
         let appPath = Bundle.main.bundlePath
-        let script = "sleep 1 && mv \"\(appPath)\" ~/.Trash/"
-        Process.launchedProcess(launchPath: "/bin/bash", arguments: ["-c", script])
+        let escaped = appPath.replacingOccurrences(of: "'", with: "'\\''")
+        let script = "sleep 1 && osascript -e 'tell application \"Finder\" to delete POSIX file \"\(escaped)\"' 2>/dev/null || rm -rf '\(escaped)'"
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/bash")
+        process.arguments = ["-c", script]
+        try? process.run()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             NSApplication.shared.terminate(nil)
