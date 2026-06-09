@@ -8,6 +8,7 @@ struct SettingsView: View {
     @State private var isTesting: Bool = false
     @State private var testResult: String?
     @State private var testSuccess: Bool = false
+    @State private var showUninstallConfirmation: Bool = false
 
     private var isFormValid: Bool {
         !baseURL.isEmpty && !email.isEmpty && !apiToken.isEmpty
@@ -96,6 +97,15 @@ struct SettingsView: View {
                     }
                 }
             }
+
+            Section {
+                Button("Uninstall JiraTimeTracker...", role: .destructive) {
+                    showUninstallConfirmation = true
+                }
+                Text("Removes all saved data, moves the app to Trash, and quits.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
         .navigationTitle("Settings")
@@ -103,6 +113,17 @@ struct SettingsView: View {
             baseURL = appState.jiraBaseURL
             email = appState.jiraEmail
             apiToken = appState.jiraAPIToken
+        }
+        .confirmationDialog(
+            "Uninstall JiraTimeTracker?",
+            isPresented: $showUninstallConfirmation
+        ) {
+            Button("Uninstall & Quit", role: .destructive) {
+                performUninstall()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will remove your saved credentials, app data, and move the app to Trash. This cannot be undone.")
         }
     }
 
@@ -124,6 +145,35 @@ struct SettingsView: View {
                 testSuccess = false
                 testResult = error.localizedDescription
             }
+        }
+    }
+
+    private func performUninstall() {
+        appState.clearCredentials()
+
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: "activeTimerIssueKey")
+        defaults.removeObject(forKey: "activeTimerIssueSummary")
+        defaults.removeObject(forKey: "activeTimerStart")
+        defaults.removeObject(forKey: "filter_statusFilter")
+        defaults.removeObject(forKey: "filter_projectKey")
+        defaults.removeObject(forKey: "filter_statusName")
+        defaults.removeObject(forKey: "filter_assignedToMe")
+
+        SharedData.saveTimerState(nil)
+        if let groupDefaults = SharedData.defaults {
+            groupDefaults.removeObject(forKey: "activeTimer")
+            groupDefaults.removeObject(forKey: "recentIssues")
+            groupDefaults.removeObject(forKey: "openIssueCount")
+            groupDefaults.synchronize()
+        }
+
+        if let appURL = Bundle.main.bundleURL as NSURL? {
+            NSWorkspace.shared.recycle([appURL as URL]) { _, _ in }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            NSApplication.shared.terminate(nil)
         }
     }
 
