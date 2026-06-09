@@ -2,20 +2,5 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>JiraTimeTracker uses your local network to sync timer state between your Mac and iPhone.</string>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>JiraTimeTracker uses Bluetooth to sync timer state between your Mac and iPhone.</string>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_jira-timer._tcp</string>
-		<string>_jira-timer._udp</string>
-	</array>
 </dict>
 </plist>

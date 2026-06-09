@@ -8,11 +8,6 @@ struct SettingsView: View {
     @State private var isTesting: Bool = false
     @State private var testResult: String?
     @State private var testSuccess: Bool = false
-    #if os(macOS)
-    @State private var pushTestResult: String?
-    @State private var pushTestSuccess: Bool = false
-    @State private var isTestingPush: Bool = false
-    #endif
 
     private var isFormValid: Bool {
         !baseURL.isEmpty && !email.isEmpty && !apiToken.isEmpty
@@ -20,25 +15,43 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Jira Cloud Instance") {
+            Section {
                 TextField("Instance URL", text: $baseURL, prompt: Text("company.atlassian.net"))
-                #if os(iOS)
-                    .keyboardType(.URL)
-                    .textInputAutocapitalization(.never)
-                #endif
                     .autocorrectionDisabled()
+            } header: {
+                Text("Jira Cloud Instance")
+            } footer: {
+                Text("Enter just the domain, e.g. **company.atlassian.net**")
             }
 
             Section("Credentials") {
                 TextField("Email", text: $email, prompt: Text("you@company.com"))
                     .textContentType(.emailAddress)
-                #if os(iOS)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                #endif
                     .autocorrectionDisabled()
 
                 SecureField("API Token", text: $apiToken, prompt: Text("Your Jira API token"))
+            }
+
+            Section {
+                Link(destination: URL(string: "https://id.atlassian.net/manage-profile/security/api-tokens")!) {
+                    HStack {
+                        Label("Create an API Token", systemImage: "key.fill")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("1. Sign in to your Atlassian account")
+                    Text("2. Click \"Create API token\"")
+                    Text("3. Copy the token and paste it above")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            } header: {
+                Text("Need a token?")
             }
 
             Section {
@@ -68,6 +81,7 @@ struct SettingsView: View {
                     save()
                 }
                 .disabled(!isFormValid)
+                .keyboardShortcut(.return, modifiers: .command)
                 .fontWeight(.semibold)
             }
 
@@ -75,59 +89,12 @@ struct SettingsView: View {
                 Section {
                     Button("Disconnect", role: .destructive) {
                         appState.clearCredentials()
+                        baseURL = ""
+                        email = ""
+                        apiToken = ""
+                        testResult = nil
                     }
                 }
-            }
-
-            #if os(iOS)
-            Section("Live Activity") {
-                if !appState.pushTokenStatus.isEmpty {
-                    Label(appState.pushTokenStatus, systemImage: appState.pushTokenStatus.contains("registered") ? "checkmark.circle.fill" : "info.circle")
-                        .font(.caption)
-                        .foregroundStyle(appState.pushTokenStatus.contains("registered") ? .green : appState.pushTokenStatus.contains("DISABLED") ? .red : .secondary)
-                }
-            }
-            #endif
-
-            #if os(macOS)
-            Section("Live Activity Push (iPhone)") {
-                HStack {
-                    Button("Test Push") {
-                        testPush()
-                    }
-                    .disabled(isTestingPush)
-
-                    if isTestingPush {
-                        ProgressView()
-                            .controlSize(.small)
-                    }
-                }
-
-                if let result = pushTestResult {
-                    Label(result, systemImage: pushTestSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundStyle(pushTestSuccess ? .green : .red)
-                        .font(.caption)
-                }
-
-                Text("Starts Live Activities on your iPhone when you start a timer on Mac. Open the iPhone app at least once to register its push token.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            #endif
-
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("How to get an API token:")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                    Text("1. Go to id.atlassian.net/manage-profile/security/api-tokens")
-                        .font(.caption)
-                    Text("2. Click 'Create API token'")
-                        .font(.caption)
-                    Text("3. Copy the token and paste it above")
-                        .font(.caption)
-                }
-                .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -159,38 +126,6 @@ struct SettingsView: View {
             }
         }
     }
-
-    #if os(macOS)
-    private func testPush() {
-        isTestingPush = true
-        pushTestResult = nil
-        Task {
-            let token = await CloudKitService.shared.fetchPushToStartToken()
-            guard let token else {
-                pushTestSuccess = false
-                pushTestResult = "No push token found — open the iPhone app first"
-                isTestingPush = false
-                return
-            }
-
-            await APNSService.shared.sendStartLiveActivity(
-                pushToken: token,
-                issueKey: "TEST-1",
-                issueSummary: "Test Live Activity",
-                startTime: Date()
-            )
-
-            if let err = await APNSService.shared.lastError {
-                pushTestSuccess = false
-                pushTestResult = err
-            } else {
-                pushTestSuccess = true
-                pushTestResult = "Push sent! Check your iPhone lock screen"
-            }
-            isTestingPush = false
-        }
-    }
-    #endif
 
     private func save() {
         appState.jiraBaseURL = baseURL

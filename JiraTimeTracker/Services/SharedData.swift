@@ -1,26 +1,10 @@
 import Foundation
-import CloudKit
-#if canImport(ActivityKit)
-import ActivityKit
-#endif
 
 struct SharedTimerData: Codable {
     let issueKey: String
     let issueSummary: String
     let startTime: Date
 }
-
-#if os(iOS)
-struct TimerActivityAttributes: ActivityAttributes {
-    let issueKey: String
-    let issueSummary: String
-    let startTime: Date
-
-    struct ContentState: Codable, Hashable {
-        let isRunning: Bool
-    }
-}
-#endif
 
 struct SharedIssueData: Codable {
     let key: String
@@ -72,25 +56,5 @@ enum SharedData {
 
     static func loadIssueCount() -> Int {
         defaults?.integer(forKey: "openIssueCount") ?? 0
-    }
-
-    static func syncTimerFromCloud() async -> SharedTimerData? {
-        let database = CKContainer.default().privateCloudDatabase
-        let recordID = CKRecord.ID(recordName: "activeTimer")
-        do {
-            let record = try await database.record(for: recordID)
-            guard let isActive = record["isActive"] as? Int64, isActive == 1,
-                  let issueKey = record["issueKey"] as? String,
-                  let issueSummary = record["issueSummary"] as? String,
-                  let startTime = record["startTime"] as? Date else {
-                saveTimerState(nil)
-                return nil
-            }
-            let timer = SharedTimerData(issueKey: issueKey, issueSummary: issueSummary, startTime: startTime)
-            saveTimerState(timer)
-            return timer
-        } catch {
-            return loadTimerState()
-        }
     }
 }

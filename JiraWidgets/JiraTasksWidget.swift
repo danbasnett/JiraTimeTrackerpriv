@@ -1,6 +1,5 @@
 import SwiftUI
 import WidgetKit
-import CloudKit
 
 struct TasksEntry: TimelineEntry {
     let date: Date
@@ -10,9 +9,6 @@ struct TasksEntry: TimelineEntry {
 }
 
 struct TasksProvider: TimelineProvider {
-    private let database = CKContainer(identifier: "iCloud.danbasnett.JiraTimeTracker").privateCloudDatabase
-    private let recordID = CKRecord.ID(recordName: "activeTimer")
-
     func placeholder(in context: Context) -> TasksEntry {
         TasksEntry(date: .now, issueCount: 0, recentIssues: [], timerData: nil)
     }
@@ -28,47 +24,14 @@ struct TasksProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<TasksEntry>) -> Void) {
-        let localTimer = SharedData.loadTimerState()
-        if localTimer != nil {
-            let entry = TasksEntry(
-                date: .now,
-                issueCount: SharedData.loadIssueCount(),
-                recentIssues: SharedData.loadRecentIssues(),
-                timerData: localTimer
-            )
-            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 1, to: .now)!
-            completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
-        } else {
-            Task {
-                let cloudData = await fetchTimerFromCloudKit()
-                if let cloud = cloudData {
-                    SharedData.saveTimerState(cloud)
-                }
-                let entry = TasksEntry(
-                    date: .now,
-                    issueCount: SharedData.loadIssueCount(),
-                    recentIssues: SharedData.loadRecentIssues(),
-                    timerData: cloudData
-                )
-                let nextUpdate = Calendar.current.date(byAdding: .minute, value: 1, to: .now)!
-                completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
-            }
-        }
-    }
-
-    private func fetchTimerFromCloudKit() async -> SharedTimerData? {
-        do {
-            let record = try await database.record(for: recordID)
-            guard let isActive = record["isActive"] as? Int64, isActive == 1,
-                  let issueKey = record["issueKey"] as? String,
-                  let issueSummary = record["issueSummary"] as? String,
-                  let startTime = record["startTime"] as? Date else {
-                return nil
-            }
-            return SharedTimerData(issueKey: issueKey, issueSummary: issueSummary, startTime: startTime)
-        } catch {
-            return nil
-        }
+        let entry = TasksEntry(
+            date: .now,
+            issueCount: SharedData.loadIssueCount(),
+            recentIssues: SharedData.loadRecentIssues(),
+            timerData: SharedData.loadTimerState()
+        )
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 1, to: .now)!
+        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
     }
 }
 
@@ -166,39 +129,6 @@ struct TasksWidgetMediumView: View {
     }
 }
 
-struct TasksWidgetRectangularView: View {
-    var entry: TasksEntry
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            if let timer = entry.timerData {
-                HStack(spacing: 4) {
-                    Image(systemName: "clock.fill")
-                    Text(timer.issueKey)
-                        .fontWeight(.semibold)
-                }
-                Text(timer.startTime, style: .timer)
-                    .font(.headline)
-                    .monospacedDigit()
-            } else {
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle")
-                    Text("\(entry.issueCount) tasks")
-                        .fontWeight(.semibold)
-                }
-                if let first = entry.recentIssues.first {
-                    Text("\(first.key): \(first.summary)")
-                        .font(.caption)
-                        .lineLimit(1)
-                }
-            }
-        }
-        .containerBackground(for: .widget) {
-            Color.clear
-        }
-    }
-}
-
 struct TasksWidgetEntryView: View {
     @Environment(\.widgetFamily) var family
     var entry: TasksEntry
@@ -207,10 +137,6 @@ struct TasksWidgetEntryView: View {
         switch family {
         case .systemMedium:
             TasksWidgetMediumView(entry: entry)
-        #if os(iOS)
-        case .accessoryRectangular:
-            TasksWidgetRectangularView(entry: entry)
-        #endif
         default:
             TasksWidgetSmallView(entry: entry)
         }
@@ -226,10 +152,6 @@ struct JiraTasksWidget: Widget {
         }
         .configurationDisplayName("Jira Tasks")
         .description("Shows your open Jira tasks and active timer.")
-        #if os(iOS)
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular])
-        #else
         .supportedFamilies([.systemSmall, .systemMedium])
-        #endif
     }
 }

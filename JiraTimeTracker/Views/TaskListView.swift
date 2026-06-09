@@ -13,23 +13,25 @@ struct TaskListView: View {
                 ActiveTimerView()
 
                 if let success = appState.successMessage {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                         Text(success)
                             .font(.callout)
                         Spacer()
                         Button {
-                            appState.successMessage = nil
+                            withAnimation { appState.successMessage = nil }
                         } label: {
                             Image(systemName: "xmark")
-                                .font(.caption)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
                         .buttonStyle(.plain)
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 8)
-                    .background(.green.opacity(0.1))
+                    .background(.green.opacity(0.08))
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
                 filterBar
@@ -98,19 +100,8 @@ struct TaskListView: View {
             .sheet(isPresented: $appState.showSettings) {
                 NavigationStack {
                     SettingsView()
-                    #if os(iOS)
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("Done") {
-                                    appState.showSettings = false
-                                }
-                            }
-                        }
-                    #endif
                 }
-                #if os(macOS)
-                .frame(minWidth: 400, minHeight: 400)
-                #endif
+                .frame(minWidth: 450, minHeight: 500)
             }
             .alert("Error", isPresented: .init(
                 get: { appState.errorMessage != nil },
@@ -150,74 +141,74 @@ struct TaskListView: View {
     }
 
     private var filterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                Picker("Status", selection: Binding(
-                    get: { appState.statusFilter },
-                    set: { newValue in
-                        appState.statusFilter = newValue
-                        appState.saveFilterState()
-                        Task { await appState.fetchIssues() }
-                    }
-                )) {
-                    ForEach(AppState.StatusFilter.allCases, id: \.self) { filter in
-                        Text(filter.rawValue).tag(filter)
-                    }
+        HStack(spacing: 8) {
+            Picker("Status", selection: Binding(
+                get: { appState.statusFilter },
+                set: { newValue in
+                    appState.statusFilter = newValue
+                    appState.saveFilterState()
+                    Task { await appState.fetchIssues() }
                 }
-                .pickerStyle(.segmented)
-                .frame(maxWidth: 200)
-
-                if !appState.availableStatuses.isEmpty {
-                    Picker("Status Name", selection: Binding(
-                        get: { appState.selectedStatusName ?? "" },
-                        set: { newValue in
-                            appState.selectedStatusName = newValue.isEmpty ? nil : newValue
-                            appState.saveFilterState()
-                        }
-                    )) {
-                        Text("All Statuses").tag("")
-                        ForEach(appState.availableStatuses, id: \.self) { status in
-                            Text(status).tag(status)
-                        }
-                    }
-                    .pickerStyle(.menu)
+            )) {
+                ForEach(AppState.StatusFilter.allCases, id: \.self) { filter in
+                    Text(filter.rawValue).tag(filter)
                 }
-
-                if !appState.projects.isEmpty {
-                    Picker("Project", selection: Binding(
-                        get: { appState.selectedProjectKey ?? "" },
-                        set: { newValue in
-                            appState.selectedProjectKey = newValue.isEmpty ? nil : newValue
-                            appState.saveFilterState()
-                            Task { await appState.fetchIssues() }
-                        }
-                    )) {
-                        Text("All Projects").tag("")
-                        ForEach(appState.projects) { project in
-                            Text(project.name).tag(project.key)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                }
-
-                Toggle(isOn: Binding(
-                    get: { appState.assignedToMe },
-                    set: { newValue in
-                        appState.assignedToMe = newValue
-                        appState.saveFilterState()
-                        Task { await appState.fetchIssues() }
-                    }
-                )) {
-                    Text("Mine")
-                        .font(.callout)
-                }
-                .toggleStyle(.button)
-                .buttonStyle(.bordered)
-                .controlSize(.small)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 200)
+
+            if !appState.availableStatuses.isEmpty {
+                Picker("Status Name", selection: Binding(
+                    get: { appState.selectedStatusName ?? "" },
+                    set: { newValue in
+                        appState.selectedStatusName = newValue.isEmpty ? nil : newValue
+                        appState.saveFilterState()
+                    }
+                )) {
+                    Text("All Statuses").tag("")
+                    ForEach(appState.availableStatuses, id: \.self) { status in
+                        Text(status).tag(status)
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+
+            if !appState.projects.isEmpty {
+                Picker("Project", selection: Binding(
+                    get: { appState.selectedProjectKey ?? "" },
+                    set: { newValue in
+                        appState.selectedProjectKey = newValue.isEmpty ? nil : newValue
+                        appState.saveFilterState()
+                        Task { await appState.fetchIssues() }
+                    }
+                )) {
+                    Text("All Projects").tag("")
+                    ForEach(appState.projects) { project in
+                        Text(project.name).tag(project.key)
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+
+            Spacer()
+
+            Toggle(isOn: Binding(
+                get: { appState.assignedToMe },
+                set: { newValue in
+                    appState.assignedToMe = newValue
+                    appState.saveFilterState()
+                    Task { await appState.fetchIssues() }
+                }
+            )) {
+                Text("Mine")
+                    .font(.callout)
+            }
+            .toggleStyle(.button)
+            .buttonStyle(.bordered)
+            .controlSize(.small)
         }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
     }
 
     private func handleStartTimer(for issue: JiraIssue) {

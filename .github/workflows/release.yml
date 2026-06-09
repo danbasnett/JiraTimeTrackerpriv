@@ -1,0 +1,70 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Build
+        run: |
+          xcodebuild \
+            -project JiraTimeTracker.xcodeproj \
+            -scheme JiraTimeTracker \
+            -configuration Release \
+            -derivedDataPath build/DerivedData \
+            -destination "generic/platform=macOS" \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            clean build
+
+      - name: Package
+        run: |
+          APP_PATH=$(find build/DerivedData -name "JiraTimeTracker.app" -type d | head -1)
+          echo "App found at: $APP_PATH"
+
+          # Create .pkg
+          pkgbuild \
+            --root "$APP_PATH" \
+            --identifier "com.danbasnett.JiraTimeTracker" \
+            --version "${GITHUB_REF_NAME#v}" \
+            --install-location "/Applications/JiraTimeTracker.app" \
+            build/JiraTimeTracker.pkg
+
+          # Create .zip
+          cd "$(dirname "$APP_PATH")"
+          zip -r -y "$GITHUB_WORKSPACE/build/JiraTimeTracker.zip" "JiraTimeTracker.app"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          draft: false
+          generate_release_notes: true
+          files: |
+            build/JiraTimeTracker.pkg
+            build/JiraTimeTracker.zip
+
+      - name: Upload Artifacts
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        uses: actions/upload-artifact@v4
+        with:
+          name: JiraTimeTracker
+          path: |
+            build/JiraTimeTracker.pkg
+            build/JiraTimeTracker.zip

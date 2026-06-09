@@ -13,10 +13,16 @@ struct TaskRowView: View {
                     Text(issue.key)
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.blue)
 
                     if let priority = issue.fields.priority {
                         priorityBadge(priority.name)
+                    }
+
+                    if let issueType = issue.fields.issuetype {
+                        Text(issueType.name)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
                     }
                 }
 
@@ -27,11 +33,6 @@ struct TaskRowView: View {
                 HStack(spacing: 8) {
                     if let status = issue.fields.status {
                         statusBadge(status)
-                    }
-                    if let issueType = issue.fields.issuetype {
-                        Text(issueType.name)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
                     }
                     if let timeSpent = issue.fields.timetracking?.timeSpent {
                         Label(timeSpent, systemImage: "clock")
@@ -53,6 +54,7 @@ struct TaskRowView: View {
                 Image(systemName: isTimerRunning ? "stop.circle.fill" : "play.circle.fill")
                     .font(.title2)
                     .foregroundStyle(isTimerRunning ? .red : .green)
+                    .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)
         }
@@ -65,7 +67,7 @@ struct TaskRowView: View {
             .fontWeight(.medium)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(statusColor(status).opacity(0.15))
+            .background(statusColor(status).opacity(0.12))
             .foregroundStyle(statusColor(status))
             .clipShape(Capsule())
     }

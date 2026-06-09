@@ -1,6 +1,5 @@
 import SwiftUI
 
-#if os(macOS)
 struct MenuBarTimerView: View {
     @Environment(AppState.self) private var appState
     @State private var showError: Bool = false
@@ -311,4 +310,3 @@ struct MenuBarTimerView: View {
         }
     }
 }
-#endif

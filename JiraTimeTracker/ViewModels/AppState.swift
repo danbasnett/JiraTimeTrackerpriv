@@ -1,9 +1,6 @@
 import Foundation
 import SwiftUI
 import WidgetKit
-#if canImport(ActivityKit)
-import ActivityKit
-#endif
 
 @Observable
 final class AppState {
@@ -60,138 +57,16 @@ final class AppState {
     var successMessage: String?
     var showSettings: Bool = false
     var workDescription: String = ""
-    var pushTokenStatus: String = ""
 
     // MARK: - Private
 
     private var apiClient: JiraAPIClient?
-    private var syncTask: Task<Void, Never>?
 
     init() {
         loadCredentials()
         loadTimerState()
         loadFilterState()
-        Task { await CloudKitService.shared.setupSubscription() }
-        startPeriodicSync()
     }
-
-    func syncFromCloud() async {
-        await CloudKitService.shared.syncFromCloud()
-        applyRemoteTimerState()
-        ensureLiveActivity()
-    }
-
-    func startPeriodicSync() {
-        PeerSyncService.shared.start { [weak self] timerData in
-            self?.handlePeerUpdate(timerData)
-        }
-
-        syncTask?.cancel()
-        syncTask = Task {
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(30))
-                guard !Task.isCancelled else { break }
-                if !PeerSyncService.shared.isConnected {
-                    await CloudKitService.shared.syncFromCloud()
-                    applyRemoteTimerState()
-                }
-            }
-        }
-    }
-
-    func stopPeriodicSync() {
-        syncTask?.cancel()
-        syncTask = nil
-        PeerSyncService.shared.stop()
-    }
-
-    private func handlePeerUpdate(_ timerData: SharedTimerData?) {
-        if let timerData {
-            activeTimerIssue = JiraIssue(
-                id: timerData.issueKey,
-                key: timerData.issueKey,
-                fields: JiraIssueFields(
-                    summary: timerData.issueSummary,
-                    status: nil,
-                    priority: nil,
-                    assignee: nil,
-                    project: nil,
-                    issuetype: nil,
-                    timetracking: nil
-                )
-            )
-            activeTimerStart = timerData.startTime
-            saveTimerState()
-            startLiveActivity(issueKey: timerData.issueKey, issueSummary: timerData.issueSummary, startTime: timerData.startTime)
-        } else {
-            activeTimerIssue = nil
-            activeTimerStart = nil
-            clearTimerState()
-            stopLiveActivity()
-        }
-        WidgetCenter.shared.reloadAllTimelines()
-    }
-
-    private func applyRemoteTimerState() {
-        let timerData = SharedData.loadTimerState()
-        if let timerData {
-            if activeTimerIssue?.key != timerData.issueKey || activeTimerStart != timerData.startTime {
-                activeTimerIssue = JiraIssue(
-                    id: timerData.issueKey,
-                    key: timerData.issueKey,
-                    fields: JiraIssueFields(
-                        summary: timerData.issueSummary,
-                        status: nil,
-                        priority: nil,
-                        assignee: nil,
-                        project: nil,
-                        issuetype: nil,
-                        timetracking: nil
-                    )
-                )
-                activeTimerStart = timerData.startTime
-                startLiveActivity(issueKey: timerData.issueKey, issueSummary: timerData.issueSummary, startTime: timerData.startTime)
-            }
-        } else if activeTimerIssue != nil {
-            activeTimerIssue = nil
-            activeTimerStart = nil
-            clearTimerState()
-            stopLiveActivity()
-        }
-        WidgetCenter.shared.reloadAllTimelines()
-    }
-
-    private func broadcastTimerChange(_ data: SharedTimerData?) {
-        PeerSyncService.shared.broadcastTimerState(data)
-        Task {
-            await CloudKitService.shared.saveTimerState(data)
-            if let err = await CloudKitService.shared.lastError {
-                errorMessage = err
-            }
-            #if os(macOS)
-            await sendAPNSPush(data)
-            #endif
-        }
-    }
-
-    #if os(macOS)
-    private func sendAPNSPush(_ data: SharedTimerData?) async {
-        guard let token = await CloudKitService.shared.fetchPushToStartToken() else { return }
-        if let data {
-            await APNSService.shared.sendStartLiveActivity(
-                pushToken: token,
-                issueKey: data.issueKey,
-                issueSummary: data.issueSummary,
-                startTime: data.startTime
-            )
-        } else {
-            await APNSService.shared.sendEndLiveActivity(pushToken: token)
-        }
-        if let err = await APNSService.shared.lastError {
-            errorMessage = err
-        }
-    }
-    #endif
 
     // MARK: - Credentials
 
@@ -254,7 +129,7 @@ final class AppState {
         do {
             projects = try await client.getProjects()
         } catch {
-            // Non-critical — don't show error for project fetch
+            // Non-critical
         }
     }
 
@@ -325,9 +200,6 @@ final class AppState {
         saveTimerState()
         successMessage = nil
         WidgetCenter.shared.reloadAllTimelines()
-        let data = SharedTimerData(issueKey: issue.key, issueSummary: issue.fields.summary, startTime: activeTimerStart!)
-        broadcastTimerChange(data)
-        startLiveActivity(issueKey: issue.key, issueSummary: issue.fields.summary, startTime: activeTimerStart!)
     }
 
     func stopAndLogTimer() async throws -> Int {
@@ -359,8 +231,6 @@ final class AppState {
         activeTimerStart = nil
         clearTimerState()
         WidgetCenter.shared.reloadAllTimelines()
-        broadcastTimerChange(nil)
-        stopLiveActivity()
 
         return elapsed
     }
@@ -370,59 +240,6 @@ final class AppState {
         activeTimerStart = nil
         clearTimerState()
         WidgetCenter.shared.reloadAllTimelines()
-        broadcastTimerChange(nil)
-        stopLiveActivity()
-    }
-
-    // MARK: - Live Activity
-
-    func ensureLiveActivity() {
-        #if os(iOS)
-        guard let issue = activeTimerIssue, let start = activeTimerStart else {
-            stopLiveActivity()
-            return
-        }
-        if Activity<TimerActivityAttributes>.activities.isEmpty {
-            startLiveActivity(issueKey: issue.key, issueSummary: issue.fields.summary, startTime: start)
-        }
-        #endif
-    }
-
-    private func startLiveActivity(issueKey: String, issueSummary: String, startTime: Date) {
-        #if os(iOS)
-        let authInfo = ActivityAuthorizationInfo()
-        guard authInfo.areActivitiesEnabled else {
-            errorMessage = "Live Activities are disabled in Settings"
-            return
-        }
-        for activity in Activity<TimerActivityAttributes>.activities {
-            let state = TimerActivityAttributes.ContentState(isRunning: false)
-            let content = ActivityContent(state: state, staleDate: nil)
-            Task { await activity.end(content, dismissalPolicy: .immediate) }
-        }
-        let attributes = TimerActivityAttributes(
-            issueKey: issueKey,
-            issueSummary: issueSummary,
-            startTime: startTime
-        )
-        let state = TimerActivityAttributes.ContentState(isRunning: true)
-        let content = ActivityContent(state: state, staleDate: nil)
-        do {
-            _ = try Activity.request(attributes: attributes, content: content)
-        } catch {
-            errorMessage = "Live Activity: \(error.localizedDescription)"
-        }
-        #endif
-    }
-
-    private func stopLiveActivity() {
-        #if os(iOS)
-        let state = TimerActivityAttributes.ContentState(isRunning: false)
-        let content = ActivityContent(state: state, staleDate: nil)
-        for activity in Activity<TimerActivityAttributes>.activities {
-            Task { await activity.end(content, dismissalPolicy: .immediate) }
-        }
-        #endif
     }
 
     // MARK: - Timer Persistence

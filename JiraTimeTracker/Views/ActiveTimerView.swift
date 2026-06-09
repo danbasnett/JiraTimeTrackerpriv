@@ -7,15 +7,17 @@ struct ActiveTimerView: View {
 
     var body: some View {
         if let issue = appState.activeTimerIssue, let start = appState.activeTimerStart {
-            VStack(spacing: 8) {
-                HStack {
-                    Circle()
-                        .fill(.red)
-                        .frame(width: 8, height: 8)
+            VStack(spacing: 10) {
+                HStack(spacing: 8) {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(.red)
+                            .frame(width: 8, height: 8)
 
-                    Text(issue.key)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                        Text(issue.key)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
 
                     Text(issue.fields.summary)
                         .font(.subheadline)
@@ -28,6 +30,7 @@ struct ActiveTimerView: View {
                         .font(.system(.title3, design: .monospaced))
                         .fontWeight(.medium)
                         .monospacedDigit()
+                        .foregroundStyle(.red)
                 }
 
                 TextField("Work description (optional)", text: Binding(
@@ -49,7 +52,6 @@ struct ActiveTimerView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                    .tint(.secondary)
 
                     Button {
                         stopAndLog()
@@ -72,6 +74,7 @@ struct ActiveTimerView: View {
             .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .padding(.horizontal)
+            .padding(.top, 8)
             .alert("Error", isPresented: $showError) {
                 Button("OK") {}
             } message: {
