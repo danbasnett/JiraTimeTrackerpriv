@@ -41,6 +41,9 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
 
+          echo "==> Identities in keychain:"
+          security find-identity -v "$KEYCHAIN_PATH"
+
       - name: Build (unsigned)
         run: |
           xcodebuild \
