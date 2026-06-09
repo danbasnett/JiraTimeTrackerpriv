@@ -43,14 +43,6 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("1. Sign in to your Atlassian account")
-                    Text("2. Click \"Create API token\"")
-                    Text("3. Copy the token and paste it above")
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
             } header: {
                 Text("Need a token?")
             }
