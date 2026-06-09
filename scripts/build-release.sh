@@ -72,13 +72,35 @@ PKG_ROOT="$BUILD_DIR/pkg-root"
 mkdir -p "$PKG_ROOT/Applications"
 cp -R "$APP_PATH" "$PKG_ROOT/Applications/"
 
+UNSIGNED_PKG="$BUILD_DIR/$PROJECT_NAME-unsigned.pkg"
 PKG_PATH="$BUILD_DIR/$PROJECT_NAME.pkg"
+
 pkgbuild \
     --root "$PKG_ROOT" \
     --identifier "com.danbasnett.JiraTimeTracker" \
     --version "1.0" \
     --install-location "/" \
-    "$PKG_PATH"
+    "$UNSIGNED_PKG"
+
+echo "==> Signing .pkg..."
+INSTALLER_IDENTITY="${INSTALLER_IDENTITY:-Developer ID Installer}"
+productsign --sign "$INSTALLER_IDENTITY" "$UNSIGNED_PKG" "$PKG_PATH"
+rm "$UNSIGNED_PKG"
+
+# Notarize .pkg if credentials are available
+if [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_PASSWORD:-}" ] && [ -n "${APPLE_TEAM_ID:-}" ]; then
+    echo "==> Notarizing .pkg..."
+    xcrun notarytool submit "$PKG_PATH" \
+        --apple-id "$APPLE_ID" \
+        --password "$APPLE_PASSWORD" \
+        --team-id "$APPLE_TEAM_ID" \
+        --wait
+
+    echo "==> Stapling .pkg..."
+    xcrun stapler staple "$PKG_PATH"
+else
+    echo "==> Skipping .pkg notarization (set APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID to enable)"
+fi
 
 echo ""
 echo "==> Build complete!"

@@ -107,7 +107,7 @@ jobs:
           zip -r -y "$GITHUB_WORKSPACE/build/JiraTimeTracker.zip" "JiraTimeTracker.app"
           cd "$GITHUB_WORKSPACE"
 
-          # Create .pkg
+          # Create unsigned .pkg
           mkdir -p build/pkg-root/Applications
           cp -R "$APP_PATH" build/pkg-root/Applications/
           pkgbuild \
@@ -115,7 +115,29 @@ jobs:
             --identifier "com.danbasnett.JiraTimeTracker" \
             --version "${GITHUB_REF_NAME#v}" \
             --install-location "/" \
+            build/JiraTimeTracker-unsigned.pkg
+
+          # Sign the .pkg with Developer ID Installer certificate
+          productsign \
+            --sign "Developer ID Installer" \
+            build/JiraTimeTracker-unsigned.pkg \
             build/JiraTimeTracker.pkg
+
+          rm build/JiraTimeTracker-unsigned.pkg
+
+      - name: Notarize pkg
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcrun notarytool submit build/JiraTimeTracker.pkg \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          xcrun stapler staple build/JiraTimeTracker.pkg
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
