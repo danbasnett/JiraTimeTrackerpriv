@@ -253,10 +253,10 @@ final class AppState {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Add minutes to the active timer by decreasing the accumulated pause.
+    /// Add minutes to the active timer by moving the start time backwards.
     func addTime(minutes: Int) {
-        guard isTimerRunning else { return }
-        timerAccumulatedPause = max(0, timerAccumulatedPause - TimeInterval(minutes * 60))
+        guard isTimerRunning, activeTimerStart != nil else { return }
+        activeTimerStart = activeTimerStart!.addingTimeInterval(-TimeInterval(minutes * 60))
         saveTimerState()
         WidgetCenter.shared.reloadAllTimelines()
     }

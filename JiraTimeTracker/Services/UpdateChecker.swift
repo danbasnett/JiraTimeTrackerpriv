@@ -132,10 +132,14 @@ final class UpdateChecker {
             xattr.waitUntilExit()
 
             // Open the .pkg installer — macOS handles permissions, admin prompt, etc.
+            // Then quit so the installer can replace the app in /Applications
             await MainActor.run {
                 isDownloading = false
-                lastCheckResult = "Opening installer..."
                 NSWorkspace.shared.open(pkgPath)
+                // Give the installer a moment to launch, then quit
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    NSApplication.shared.terminate(nil)
+                }
             }
         } catch {
             await MainActor.run {
