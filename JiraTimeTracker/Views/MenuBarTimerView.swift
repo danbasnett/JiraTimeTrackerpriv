@@ -410,6 +410,13 @@ struct MenuBarTimerView: View {
                     }
                 }
 
+                footerButton(
+                    updateChecker.isChecking ? "Checking..." : "Updates",
+                    icon: "arrow.triangle.2.circlepath"
+                ) {
+                    Task { await updateChecker.checkForUpdates() }
+                }
+
                 footerButton("Settings", icon: "gear") {
                     appState.showSettings = true
                     NSApplication.shared.activate()
