@@ -8,42 +8,7 @@ struct TaskRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(issue.key)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.blue)
-
-                    if let priority = issue.fields.priority {
-                        priorityBadge(priority.name)
-                    }
-
-                    if let issueType = issue.fields.issuetype {
-                        Text(issueType.name)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-
-                Text(issue.fields.summary)
-                    .font(.body)
-                    .lineLimit(2)
-
-                HStack(spacing: 8) {
-                    if let status = issue.fields.status {
-                        statusBadge(status)
-                    }
-                    if let timeSpent = issue.fields.timetracking?.timeSpent {
-                        Label(timeSpent, systemImage: "clock")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
-            Spacer()
-
+            // Play/stop button
             Button {
                 if isTimerRunning {
                     onStopTimer()
@@ -52,19 +17,61 @@ struct TaskRowView: View {
                 }
             } label: {
                 Image(systemName: isTimerRunning ? "stop.circle.fill" : "play.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(isTimerRunning ? .red : .green)
+                    .font(.title3)
+                    .foregroundStyle(isTimerRunning ? .red : .accentColor)
                     .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)
+
+            VStack(alignment: .leading, spacing: 4) {
+                // Key + metadata row
+                HStack(spacing: 6) {
+                    Text(issue.key)
+                        .font(.callout)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+
+                    if let issueType = issue.fields.issuetype {
+                        Text(issueType.name)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+
+                    if let priority = issue.fields.priority {
+                        priorityBadge(priority.name)
+                    }
+
+                    Spacer()
+
+                    if let timeSpent = issue.fields.timetracking?.timeSpent {
+                        HStack(spacing: 2) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 9))
+                            Text(timeSpent)
+                                .font(.caption2)
+                        }
+                        .foregroundStyle(.tertiary)
+                    }
+                }
+
+                // Summary
+                Text(issue.fields.summary)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+
+                // Status badge
+                if let status = issue.fields.status {
+                    statusBadge(status)
+                }
+            }
         }
         .padding(.vertical, 4)
     }
 
     private func statusBadge(_ status: JiraStatus) -> some View {
         Text(status.name)
-            .font(.caption2)
-            .fontWeight(.medium)
+            .font(.system(size: 10, weight: .medium))
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(statusColor(status).opacity(0.12))

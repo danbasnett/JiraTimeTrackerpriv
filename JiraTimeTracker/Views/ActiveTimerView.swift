@@ -7,28 +7,32 @@ struct ActiveTimerView: View {
 
     var body: some View {
         if let issue = appState.activeTimerIssue, let start = appState.activeTimerStart {
-            VStack(spacing: 10) {
-                HStack(spacing: 8) {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(.red)
-                            .frame(width: 8, height: 8)
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    // Timer display
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(.red)
+                                .frame(width: 7, height: 7)
+                                .shadow(color: .red.opacity(0.5), radius: 3)
 
-                        Text(issue.key)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
+                            Text(issue.key)
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Text(issue.fields.summary)
+                            .font(.callout)
+                            .lineLimit(1)
                     }
-
-                    Text(issue.fields.summary)
-                        .font(.subheadline)
-                        .lineLimit(1)
-                        .foregroundStyle(.secondary)
 
                     Spacer()
 
                     Text(start, style: .timer)
-                        .font(.system(.title3, design: .monospaced))
-                        .fontWeight(.medium)
+                        .font(.system(.title2, design: .monospaced))
+                        .fontWeight(.semibold)
                         .monospacedDigit()
                         .foregroundStyle(.red)
                 }
@@ -37,17 +41,18 @@ struct ActiveTimerView: View {
                     get: { appState.workDescription },
                     set: { appState.workDescription = $0 }
                 ), axis: .vertical)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.caption)
-                    .lineLimit(2...4)
+                .textFieldStyle(.roundedBorder)
+                .font(.caption)
+                .lineLimit(2...3)
+                .padding(.top, 8)
 
-                HStack(spacing: 12) {
+                HStack(spacing: 8) {
                     Spacer()
 
                     Button {
                         appState.discardTimer()
                     } label: {
-                        Label("Discard", systemImage: "xmark")
+                        Text("Discard")
                             .font(.caption)
                     }
                     .buttonStyle(.bordered)
@@ -69,11 +74,15 @@ struct ActiveTimerView: View {
                     .tint(.red)
                     .disabled(appState.isLoggingTime)
                 }
+                .padding(.top, 8)
             }
-            .padding()
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal)
+            .padding(12)
+            .background {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.red.opacity(0.04))
+                    .strokeBorder(.red.opacity(0.15), lineWidth: 1)
+            }
+            .padding(.horizontal, 12)
             .padding(.top, 8)
             .alert("Error", isPresented: $showError) {
                 Button("OK") {}

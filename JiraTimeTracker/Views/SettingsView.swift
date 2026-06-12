@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
+    @Environment(UpdateChecker.self) private var updateChecker
     @State private var baseURL: String = ""
     @State private var email: String = ""
     @State private var apiToken: String = ""
@@ -88,6 +89,34 @@ struct SettingsView: View {
                         testResult = nil
                     }
                 }
+            }
+
+            Section {
+                HStack {
+                    Text("Version")
+                    Spacer()
+                    Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
+                        .foregroundStyle(.secondary)
+                }
+
+                if updateChecker.updateAvailable {
+                    Link(destination: URL(string: updateChecker.releaseURL)!) {
+                        HStack {
+                            Label("Update available: v\(updateChecker.latestVersion)", systemImage: "arrow.down.circle.fill")
+                                .foregroundStyle(.blue)
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } else {
+                    Button("Check for Updates") {
+                        Task { await updateChecker.checkForUpdates() }
+                    }
+                }
+            } header: {
+                Text("About")
             }
 
             Section {
