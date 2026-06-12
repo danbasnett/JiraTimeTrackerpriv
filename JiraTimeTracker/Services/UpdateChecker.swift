@@ -15,7 +15,7 @@ final class UpdateChecker {
     private let currentVersion: String
     private let repoOwner = "danbasnett"
     private let repoName = "JiraTimeTracker"
-    private var zipDownloadURL: String = ""
+    private var pkgDownloadURL: String = ""
     private var periodicTask: Task<Void, Never>?
 
     init() {
@@ -62,8 +62,8 @@ final class UpdateChecker {
 
             let remoteVersion = release.tagName.trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
 
-            // Find the .zip asset
-            let zipAsset = release.assets?.first(where: { $0.name.hasSuffix(".zip") })
+            // Find the .pkg asset (preferred) or .zip fallback
+            let pkgAsset = release.assets?.first(where: { $0.name.hasSuffix(".pkg") })
 
             await MainActor.run {
                 isChecking = false
@@ -71,7 +71,7 @@ final class UpdateChecker {
                     latestVersion = remoteVersion
                     releaseURL = release.htmlUrl
                     releaseNotes = release.body ?? ""
-                    zipDownloadURL = zipAsset?.browserDownloadUrl ?? ""
+                    pkgDownloadURL = pkgAsset?.browserDownloadUrl ?? ""
                     updateAvailable = true
                     lastCheckResult = nil
                 } else {
@@ -88,7 +88,7 @@ final class UpdateChecker {
     }
 
     func downloadAndInstall() async {
-        guard !zipDownloadURL.isEmpty, let url = URL(string: zipDownloadURL) else {
+        guard !pkgDownloadURL.isEmpty, let url = URL(string: pkgDownloadURL) else {
             await MainActor.run {
                 lastCheckResult = "No download available"
             }
@@ -102,7 +102,7 @@ final class UpdateChecker {
         }
 
         do {
-            // Download to temp
+            // Download the .pkg to a temp location
             let (tempURL, response) = try await URLSession.shared.download(from: url)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
                 await MainActor.run {
@@ -112,115 +112,30 @@ final class UpdateChecker {
                 return
             }
 
+            // Move to a named location so Finder shows the right name
             let fm = FileManager.default
-            let tempDir = fm.temporaryDirectory.appendingPathComponent("JiraTimeTrackerUpdate-\(UUID().uuidString)")
-            try fm.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            let downloadsDir = fm.urls(for: .downloadsDirectory, in: .userDomainMask).first
+                ?? fm.temporaryDirectory
+            let pkgPath = downloadsDir.appendingPathComponent("JiraTimeTracker-\(latestVersion).pkg")
 
-            // Move downloaded zip
-            let zipPath = tempDir.appendingPathComponent("JiraTimeTracker.zip")
-            if fm.fileExists(atPath: zipPath.path) {
-                try fm.removeItem(at: zipPath)
+            // Remove any existing file at that path
+            if fm.fileExists(atPath: pkgPath.path) {
+                try fm.removeItem(at: pkgPath)
             }
-            try fm.moveItem(at: tempURL, to: zipPath)
+            try fm.moveItem(at: tempURL, to: pkgPath)
 
-            // Remove quarantine attribute from the zip
-            let xattrZip = Process()
-            xattrZip.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
-            xattrZip.arguments = ["-d", "com.apple.quarantine", zipPath.path]
-            try? xattrZip.run()
-            xattrZip.waitUntilExit()
+            // Remove quarantine so Gatekeeper doesn't block it
+            let xattr = Process()
+            xattr.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
+            xattr.arguments = ["-d", "com.apple.quarantine", pkgPath.path]
+            try? xattr.run()
+            xattr.waitUntilExit()
 
-            // Unzip
-            let unzipDir = tempDir.appendingPathComponent("extracted")
-            try fm.createDirectory(at: unzipDir, withIntermediateDirectories: true)
-
-            let unzip = Process()
-            unzip.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-            unzip.arguments = ["-xk", zipPath.path, unzipDir.path]
-            try unzip.run()
-            unzip.waitUntilExit()
-
-            guard unzip.terminationStatus == 0 else {
-                await MainActor.run {
-                    isDownloading = false
-                    lastCheckResult = "Failed to extract update"
-                }
-                return
-            }
-
-            // Find the .app — check both top level and one level deep
-            let newApp: URL? = try {
-                let topLevel = try fm.contentsOfDirectory(at: unzipDir, includingPropertiesForKeys: nil)
-                if let app = topLevel.first(where: { $0.lastPathComponent.hasSuffix(".app") }) {
-                    return app
-                }
-                // Check one level deeper (some zips nest in a folder)
-                for dir in topLevel where dir.hasDirectoryPath {
-                    let nested = try fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
-                    if let app = nested.first(where: { $0.lastPathComponent.hasSuffix(".app") }) {
-                        return app
-                    }
-                }
-                return nil
-            }()
-
-            guard let newApp else {
-                await MainActor.run {
-                    isDownloading = false
-                    lastCheckResult = "Update package invalid"
-                }
-                return
-            }
-
-            // Remove quarantine from extracted app
-            let xattrApp = Process()
-            xattrApp.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
-            xattrApp.arguments = ["-r", "-d", "com.apple.quarantine", newApp.path]
-            try? xattrApp.run()
-            xattrApp.waitUntilExit()
-
-            // Resolve the real app path (handles App Translocation)
-            let currentAppPath = resolveAppPath()
-            let newAppPath = newApp.path
-
-            let logFile = tempDir.appendingPathComponent("update.log").path
-            let pid = ProcessInfo.processInfo.processIdentifier
-
-            let esc = { (s: String) in s.replacingOccurrences(of: "'", with: "'\\''") }
-
-            let script = """
-            exec > '\(esc(logFile))' 2>&1
-            echo "Update started at $(date)"
-            echo "PID to wait for: \(pid)"
-            echo "Current app: \(esc(currentAppPath))"
-            echo "New app: \(esc(newAppPath))"
-
-            while kill -0 \(pid) 2>/dev/null; do sleep 0.2; done
-            echo "App exited, replacing..."
-
-            rm -rf '\(esc(currentAppPath))'
-            if [ $? -ne 0 ]; then echo "ERROR: rm failed"; exit 1; fi
-
-            cp -R '\(esc(newAppPath))' '\(esc(currentAppPath))'
-            if [ $? -ne 0 ]; then echo "ERROR: cp failed"; exit 1; fi
-
-            echo "Launching updated app..."
-            sleep 0.5
-            open '\(esc(currentAppPath))'
-
-            echo "Cleaning up temp dir..."
-            rm -rf '\(esc(tempDir.path))'
-            echo "Done"
-            """
-
-            let helper = Process()
-            helper.executableURL = URL(fileURLWithPath: "/bin/bash")
-            helper.arguments = ["-c", script]
-            try helper.run()
-
-            // Quit the app so the helper can replace it
+            // Open the .pkg installer — macOS handles permissions, admin prompt, etc.
             await MainActor.run {
-                NSApplication.shared.terminate(nil)
+                isDownloading = false
+                lastCheckResult = "Opening installer..."
+                NSWorkspace.shared.open(pkgPath)
             }
         } catch {
             await MainActor.run {
@@ -228,32 +143,6 @@ final class UpdateChecker {
                 lastCheckResult = "Update failed: \(error.localizedDescription)"
             }
         }
-    }
-
-    /// Resolve the real app bundle path, handling macOS App Translocation.
-    /// When an app is opened from a quarantined location, macOS copies it to a
-    /// randomized read-only path. We need to find the original location to replace it.
-    private func resolveAppPath() -> String {
-        let bundlePath = Bundle.main.bundlePath
-
-        // Check if we're in a translocated path
-        // Translocated paths look like: /private/var/folders/.../AppTranslocation/.../d/JiraTimeTracker.app
-        if bundlePath.contains("/AppTranslocation/") {
-            // Try to find the app in /Applications first
-            let appName = (bundlePath as NSString).lastPathComponent
-            let applicationsPath = "/Applications/\(appName)"
-            if FileManager.default.fileExists(atPath: applicationsPath) {
-                return applicationsPath
-            }
-            // Try user Applications
-            let userAppsPath = NSHomeDirectory() + "/Applications/\(appName)"
-            if FileManager.default.fileExists(atPath: userAppsPath) {
-                return userAppsPath
-            }
-        }
-
-        // Not translocated — use the bundle path as-is
-        return bundlePath
     }
 
     private func isNewer(remote: String, current: String) -> Bool {

@@ -100,11 +100,17 @@ struct MenuBarTimerView: View {
                     .fixedSize()
 
                     Menu {
+                        let elapsed = appState.effectiveElapsedSeconds
                         Button("− 1 min") { appState.subtractTime(minutes: 1) }
+                            .disabled(elapsed < 60)
                         Button("− 5 min") { appState.subtractTime(minutes: 5) }
+                            .disabled(elapsed < 300)
                         Button("− 15 min") { appState.subtractTime(minutes: 15) }
+                            .disabled(elapsed < 900)
                         Button("− 30 min") { appState.subtractTime(minutes: 30) }
+                            .disabled(elapsed < 1800)
                         Button("− 60 min") { appState.subtractTime(minutes: 60) }
+                            .disabled(elapsed < 3600)
                     } label: {
                         Image(systemName: "minus.circle")
                             .font(.caption)

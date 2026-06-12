@@ -62,6 +62,16 @@ final class AppState {
         return start.addingTimeInterval(totalPause)
     }
 
+    /// Current effective elapsed seconds (accounting for pauses)
+    var effectiveElapsedSeconds: Int {
+        guard let start = activeTimerStart else { return 0 }
+        var totalPause = timerAccumulatedPause
+        if let pauseStart = timerPauseStart {
+            totalPause += Date().timeIntervalSince(pauseStart)
+        }
+        return max(0, Int(Date().timeIntervalSince(start) - totalPause))
+    }
+
     // MARK: - UI State
 
     var isLoading: Bool = false
@@ -233,9 +243,12 @@ final class AppState {
     }
 
     /// Subtract minutes from the active timer by increasing the accumulated pause.
+    /// Returns false if it would make the timer go negative.
     func subtractTime(minutes: Int) {
         guard isTimerRunning else { return }
-        timerAccumulatedPause += TimeInterval(minutes * 60)
+        let secondsToSubtract = TimeInterval(minutes * 60)
+        guard effectiveElapsedSeconds >= Int(secondsToSubtract) else { return }
+        timerAccumulatedPause += secondsToSubtract
         saveTimerState()
         WidgetCenter.shared.reloadAllTimelines()
     }
