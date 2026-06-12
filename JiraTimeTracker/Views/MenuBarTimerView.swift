@@ -9,24 +9,20 @@ struct MenuBarTimerView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Timer section
             timerSection
                 .padding(12)
 
             Divider()
 
-            // Filters
             filterSection
                 .padding(12)
 
             Divider()
 
-            // Task list
             taskSection
 
             Divider()
 
-            // Footer actions
             footerSection
                 .padding(8)
         }
@@ -143,7 +139,6 @@ struct MenuBarTimerView: View {
 
     private var filterSection: some View {
         VStack(spacing: 8) {
-            // Search
             HStack(spacing: 4) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.tertiary)
@@ -169,10 +164,8 @@ struct MenuBarTimerView: View {
                 }
             }
             .padding(6)
-            .background(.quaternary.opacity(0.5))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 6))
 
-            // Filter chips
             HStack(spacing: 4) {
                 menuFilterChip("Open", isSelected: appState.statusFilter == .open) {
                     appState.statusFilter = .open
@@ -199,7 +192,6 @@ struct MenuBarTimerView: View {
                 }
             }
 
-            // Project & status dropdowns
             if !appState.projects.isEmpty || !appState.availableStatuses.isEmpty {
                 HStack(spacing: 4) {
                     if !appState.projects.isEmpty {
@@ -355,9 +347,8 @@ struct MenuBarTimerView: View {
                                 .font(.system(size: 9, weight: .medium))
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 1)
-                                .background(statusColor(status).opacity(0.15))
+                                .background(statusColor(status).opacity(0.15), in: Capsule())
                                 .foregroundStyle(statusColor(status))
-                                .clipShape(Capsule())
                         }
                     }
 
@@ -374,11 +365,6 @@ struct MenuBarTimerView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background {
-            if appState.activeTimerIssue?.id == issue.id {
-                Color.red.opacity(0.06)
-            }
-        }
     }
 
     // MARK: - Footer
@@ -403,8 +389,7 @@ struct MenuBarTimerView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 6)
-                    .background(.blue.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .background(.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
                 .padding(.bottom, 4)
@@ -460,9 +445,8 @@ struct MenuBarTimerView: View {
                 .fontWeight(isSelected ? .semibold : .regular)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
+                .background(isSelected ? Color.accentColor.opacity(0.15) : Color.clear, in: Capsule())
                 .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                .clipShape(Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -481,9 +465,8 @@ struct MenuBarTimerView: View {
             }
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
-            .background(isActive ? Color.accentColor.opacity(0.15) : Color.secondary.opacity(0.08))
+            .background(isActive ? AnyShapeStyle(Color.accentColor.opacity(0.15)) : AnyShapeStyle(.fill.tertiary), in: Capsule())
             .foregroundStyle(isActive ? Color.accentColor : .secondary)
-            .clipShape(Capsule())
         }
         .buttonStyle(.plain)
     }
