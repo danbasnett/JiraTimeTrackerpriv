@@ -1,0 +1,67 @@
+{
+  "Name": "JiraTimeTracker",
+  "Version": "1.0.0",
+  "Author": "Dan Basnett",
+  "Description": "Control JiraTimeTracker from your Stream Deck. Start, stop, pause and resume Jira time tracking.",
+  "Category": "Productivity",
+  "Icon": "imgs/plugin-icon",
+  "URL": "https://github.com/danbasnett/JiraTimeTracker",
+  "Actions": [
+    {
+      "Name": "Toggle Timer",
+      "UUID": "com.danbasnett.jiratimetracker.toggle",
+      "Icon": "imgs/toggle-icon",
+      "Tooltip": "Toggle the active timer between running and paused",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "imgs/toggle-icon",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "Pause / Resume",
+      "UUID": "com.danbasnett.jiratimetracker.pause-resume",
+      "Icon": "imgs/pause-icon",
+      "Tooltip": "Pause or resume the active timer",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "imgs/pause-icon",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "Stop & Log",
+      "UUID": "com.danbasnett.jiratimetracker.stop",
+      "Icon": "imgs/stop-icon",
+      "Tooltip": "Stop the timer and log time to Jira",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "imgs/stop-icon",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    }
+  ],
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.7"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "13.0"
+    }
+  ],
+  "Nodejs": {
+    "Version": "24",
+    "Debug": "enabled"
+  }
+}

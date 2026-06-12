@@ -41,15 +41,17 @@ struct TimerWidgetView: View {
     }
 
     private func activeTimerContent(_ timer: SharedTimerData) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        let accentColor: Color = timer.isPaused ? .orange : .red
+
+        return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
                 Circle()
-                    .fill(.red)
+                    .fill(accentColor)
                     .frame(width: 6, height: 6)
-                Text("Tracking")
+                Text(timer.isPaused ? "Paused" : "Tracking")
                     .font(.caption2)
                     .fontWeight(.semibold)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(accentColor)
                 Spacer()
             }
 
@@ -67,14 +69,41 @@ struct TimerWidgetView: View {
 
             Spacer(minLength: 0)
 
-            Text(timer.startTime, style: .timer)
-                .font(.system(family == .systemSmall ? .title3 : .title2, design: .monospaced))
-                .fontWeight(.medium)
-                .monospacedDigit()
-                .foregroundStyle(.red)
+            if timer.isPaused {
+                // Show frozen elapsed time
+                Text(formattedElapsed(timer))
+                    .font(.system(family == .systemSmall ? .title3 : .title2, design: .monospaced))
+                    .fontWeight(.medium)
+                    .monospacedDigit()
+                    .foregroundStyle(.orange)
+            } else {
+                // Show the effective start (shifted by accumulated pause) for live timer
+                Text(timer.startTime.addingTimeInterval(timer.accumulatedPauseTime), style: .timer)
+                    .font(.system(family == .systemSmall ? .title3 : .title2, design: .monospaced))
+                    .fontWeight(.medium)
+                    .monospacedDigit()
+                    .foregroundStyle(.red)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(4)
+    }
+
+    private func formattedElapsed(_ timer: SharedTimerData) -> String {
+        var totalPause = timer.accumulatedPauseTime
+        if let pauseStart = timer.pauseStart {
+            totalPause += Date().timeIntervalSince(pauseStart)
+        }
+        let elapsed = max(0, Date().timeIntervalSince(timer.startTime) - totalPause)
+        let secs = Int(elapsed)
+        let h = secs / 3600
+        let m = (secs % 3600) / 60
+        let s = secs % 60
+        if h > 0 {
+            return String(format: "%d:%02d:%02d", h, m, s)
+        } else {
+            return String(format: "%d:%02d", m, s)
+        }
     }
 
     private var idleContent: some View {

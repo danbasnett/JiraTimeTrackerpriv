@@ -4,6 +4,9 @@ struct SharedTimerData: Codable {
     let issueKey: String
     let issueSummary: String
     let startTime: Date
+    var isPaused: Bool = false
+    var accumulatedPauseTime: TimeInterval = 0
+    var pauseStart: Date? = nil
 }
 
 struct SharedIssueData: Codable {

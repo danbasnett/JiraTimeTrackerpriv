@@ -47,7 +47,20 @@ final class AppState {
 
     var activeTimerIssue: JiraIssue?
     var activeTimerStart: Date?
+    var timerPauseStart: Date?
+    var timerAccumulatedPause: TimeInterval = 0
     var isTimerRunning: Bool { activeTimerIssue != nil && activeTimerStart != nil }
+    var isTimerPaused: Bool { timerPauseStart != nil }
+
+    /// The effective start date shifted forward by total pause time, for use with `Text(date, style: .timer)`
+    var effectiveTimerStart: Date? {
+        guard let start = activeTimerStart else { return nil }
+        var totalPause = timerAccumulatedPause
+        if let pauseStart = timerPauseStart {
+            totalPause += Date().timeIntervalSince(pauseStart)
+        }
+        return start.addingTimeInterval(totalPause)
+    }
 
     // MARK: - UI State
 
@@ -197,8 +210,25 @@ final class AppState {
     func startTimer(for issue: JiraIssue) {
         activeTimerIssue = issue
         activeTimerStart = Date()
+        timerPauseStart = nil
+        timerAccumulatedPause = 0
         saveTimerState()
         successMessage = nil
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    func pauseTimer() {
+        guard isTimerRunning, !isTimerPaused else { return }
+        timerPauseStart = Date()
+        saveTimerState()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    func resumeTimer() {
+        guard let pauseStart = timerPauseStart else { return }
+        timerAccumulatedPause += Date().timeIntervalSince(pauseStart)
+        timerPauseStart = nil
+        saveTimerState()
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -207,7 +237,13 @@ final class AppState {
             throw TimerError.noActiveTimer
         }
 
-        let elapsed = Int(Date().timeIntervalSince(start))
+        // If paused, finalize the current pause interval
+        var totalPause = timerAccumulatedPause
+        if let pauseStart = timerPauseStart {
+            totalPause += Date().timeIntervalSince(pauseStart)
+        }
+
+        let elapsed = Int(Date().timeIntervalSince(start) - totalPause)
         guard elapsed >= 60 else {
             throw TimerError.tooShort
         }
@@ -229,6 +265,8 @@ final class AppState {
         workDescription = ""
         activeTimerIssue = nil
         activeTimerStart = nil
+        timerPauseStart = nil
+        timerAccumulatedPause = 0
         clearTimerState()
         WidgetCenter.shared.reloadAllTimelines()
 
@@ -238,6 +276,8 @@ final class AppState {
     func discardTimer() {
         activeTimerIssue = nil
         activeTimerStart = nil
+        timerPauseStart = nil
+        timerAccumulatedPause = 0
         clearTimerState()
         WidgetCenter.shared.reloadAllTimelines()
     }
@@ -250,10 +290,19 @@ final class AppState {
         defaults.set(issue.key, forKey: "activeTimerIssueKey")
         defaults.set(issue.fields.summary, forKey: "activeTimerIssueSummary")
         defaults.set(start.timeIntervalSince1970, forKey: "activeTimerStart")
+        defaults.set(timerAccumulatedPause, forKey: "activeTimerAccumulatedPause")
+        if let pauseStart = timerPauseStart {
+            defaults.set(pauseStart.timeIntervalSince1970, forKey: "activeTimerPauseStart")
+        } else {
+            defaults.removeObject(forKey: "activeTimerPauseStart")
+        }
         SharedData.saveTimerState(SharedTimerData(
             issueKey: issue.key,
             issueSummary: issue.fields.summary,
-            startTime: start
+            startTime: start,
+            isPaused: isTimerPaused,
+            accumulatedPauseTime: timerAccumulatedPause,
+            pauseStart: timerPauseStart
         ))
     }
 
@@ -279,6 +328,9 @@ final class AppState {
             )
         )
         activeTimerStart = start
+        timerAccumulatedPause = defaults.double(forKey: "activeTimerAccumulatedPause")
+        let pauseEpoch = defaults.double(forKey: "activeTimerPauseStart")
+        timerPauseStart = pauseEpoch > 0 ? Date(timeIntervalSince1970: pauseEpoch) : nil
     }
 
     private func clearTimerState() {
@@ -286,6 +338,8 @@ final class AppState {
         defaults.removeObject(forKey: "activeTimerIssueKey")
         defaults.removeObject(forKey: "activeTimerIssueSummary")
         defaults.removeObject(forKey: "activeTimerStart")
+        defaults.removeObject(forKey: "activeTimerAccumulatedPause")
+        defaults.removeObject(forKey: "activeTimerPauseStart")
         SharedData.saveTimerState(nil)
     }
 

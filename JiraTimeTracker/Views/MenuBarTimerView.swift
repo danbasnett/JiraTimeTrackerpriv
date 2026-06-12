@@ -43,26 +43,42 @@ struct MenuBarTimerView: View {
 
     private var timerSection: some View {
         Group {
-            if let issue = appState.activeTimerIssue, let start = appState.activeTimerStart {
+            if let issue = appState.activeTimerIssue, let _ = appState.activeTimerStart {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 6) {
                         Circle()
-                            .fill(.red)
+                            .fill(appState.isTimerPaused ? .orange : .red)
                             .frame(width: 7, height: 7)
-                            .shadow(color: .red.opacity(0.5), radius: 3)
+                            .shadow(color: (appState.isTimerPaused ? Color.orange : Color.red).opacity(0.5), radius: 3)
 
                         Text(issue.key)
                             .font(.caption)
                             .fontWeight(.bold)
                             .foregroundStyle(.secondary)
 
+                        if appState.isTimerPaused {
+                            Text("PAUSED")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.orange)
+                        }
+
                         Spacer()
 
-                        Text(start, style: .timer)
-                            .font(.system(.title3, design: .monospaced))
-                            .fontWeight(.semibold)
-                            .monospacedDigit()
-                            .foregroundStyle(.red)
+                        if appState.isTimerPaused {
+                            // Show frozen time when paused
+                            let elapsed = timerElapsedWhilePaused
+                            Text(elapsed)
+                                .font(.system(.title3, design: .monospaced))
+                                .fontWeight(.semibold)
+                                .monospacedDigit()
+                                .foregroundStyle(.orange)
+                        } else if let effectiveStart = appState.effectiveTimerStart {
+                            Text(effectiveStart, style: .timer)
+                                .font(.system(.title3, design: .monospaced))
+                                .fontWeight(.semibold)
+                                .monospacedDigit()
+                                .foregroundStyle(.red)
+                        }
                     }
 
                     Text(issue.fields.summary)
@@ -84,6 +100,22 @@ struct MenuBarTimerView: View {
                             appState.discardTimer()
                         }
                         .controlSize(.small)
+
+                        Button {
+                            if appState.isTimerPaused {
+                                appState.resumeTimer()
+                            } else {
+                                appState.pauseTimer()
+                            }
+                        } label: {
+                            Label(
+                                appState.isTimerPaused ? "Resume" : "Pause",
+                                systemImage: appState.isTimerPaused ? "play.fill" : "pause.fill"
+                            )
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .tint(.orange)
 
                         Button {
                             stopAndLog()
@@ -164,7 +196,7 @@ struct MenuBarTimerView: View {
                 }
             }
             .padding(6)
-            .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 6))
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
 
             HStack(spacing: 4) {
                 menuFilterChip("Open", isSelected: appState.statusFilter == .open) {
@@ -395,7 +427,7 @@ struct MenuBarTimerView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 6)
-                    .background(.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
+                    .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
                 .disabled(updateChecker.isDownloading)
@@ -459,7 +491,7 @@ struct MenuBarTimerView: View {
                 .fontWeight(isSelected ? .semibold : .regular)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(isSelected ? Color.accentColor.opacity(0.15) : Color.clear, in: Capsule())
+                .background(isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.15)) : AnyShapeStyle(.clear), in: Capsule())
                 .foregroundStyle(isSelected ? Color.accentColor : .secondary)
         }
         .buttonStyle(.plain)
@@ -479,7 +511,7 @@ struct MenuBarTimerView: View {
             }
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
-            .background(isActive ? AnyShapeStyle(Color.accentColor.opacity(0.15)) : AnyShapeStyle(.fill.tertiary), in: Capsule())
+            .background(isActive ? AnyShapeStyle(Color.accentColor.opacity(0.15)) : AnyShapeStyle(.quaternary), in: Capsule())
             .foregroundStyle(isActive ? Color.accentColor : .secondary)
         }
         .buttonStyle(.plain)
@@ -491,6 +523,25 @@ struct MenuBarTimerView: View {
         case "indeterminate": return .orange
         case "done": return .green
         default: return .secondary
+        }
+    }
+
+    /// Formatted elapsed time for display when paused (timer is frozen)
+    private var timerElapsedWhilePaused: String {
+        guard let start = appState.activeTimerStart else { return "0:00" }
+        var totalPause = appState.timerAccumulatedPause
+        if let pauseStart = appState.timerPauseStart {
+            totalPause += Date().timeIntervalSince(pauseStart)
+        }
+        let elapsed = Date().timeIntervalSince(start) - totalPause
+        let secs = max(0, Int(elapsed))
+        let h = secs / 3600
+        let m = (secs % 3600) / 60
+        let s = secs % 60
+        if h > 0 {
+            return String(format: "%d:%02d:%02d", h, m, s)
+        } else {
+            return String(format: "%d:%02d", m, s)
         }
     }
 

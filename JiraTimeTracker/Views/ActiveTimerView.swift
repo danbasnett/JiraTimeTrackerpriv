@@ -6,21 +6,29 @@ struct ActiveTimerView: View {
     @State private var errorText: String = ""
 
     var body: some View {
-        if let issue = appState.activeTimerIssue, let start = appState.activeTimerStart {
+        if let issue = appState.activeTimerIssue, let _ = appState.activeTimerStart {
+            let accentColor: Color = appState.isTimerPaused ? .orange : .red
+
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     // Timer display
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 6) {
                             Circle()
-                                .fill(.red)
+                                .fill(accentColor)
                                 .frame(width: 7, height: 7)
-                                .shadow(color: .red.opacity(0.5), radius: 3)
+                                .shadow(color: accentColor.opacity(0.5), radius: 3)
 
                             Text(issue.key)
                                 .font(.caption)
                                 .fontWeight(.bold)
                                 .foregroundStyle(.secondary)
+
+                            if appState.isTimerPaused {
+                                Text("PAUSED")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(.orange)
+                            }
                         }
 
                         Text(issue.fields.summary)
@@ -30,11 +38,19 @@ struct ActiveTimerView: View {
 
                     Spacer()
 
-                    Text(start, style: .timer)
-                        .font(.system(.title2, design: .monospaced))
-                        .fontWeight(.semibold)
-                        .monospacedDigit()
-                        .foregroundStyle(.red)
+                    if appState.isTimerPaused {
+                        Text(frozenElapsed)
+                            .font(.system(.title2, design: .monospaced))
+                            .fontWeight(.semibold)
+                            .monospacedDigit()
+                            .foregroundStyle(.orange)
+                    } else if let effectiveStart = appState.effectiveTimerStart {
+                        Text(effectiveStart, style: .timer)
+                            .font(.system(.title2, design: .monospaced))
+                            .fontWeight(.semibold)
+                            .monospacedDigit()
+                            .foregroundStyle(.red)
+                    }
                 }
 
                 TextField("Work description (optional)", text: Binding(
@@ -59,6 +75,23 @@ struct ActiveTimerView: View {
                     .controlSize(.small)
 
                     Button {
+                        if appState.isTimerPaused {
+                            appState.resumeTimer()
+                        } else {
+                            appState.pauseTimer()
+                        }
+                    } label: {
+                        Label(
+                            appState.isTimerPaused ? "Resume" : "Pause",
+                            systemImage: appState.isTimerPaused ? "play.fill" : "pause.fill"
+                        )
+                        .font(.caption)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .tint(.orange)
+
+                    Button {
                         stopAndLog()
                     } label: {
                         if appState.isLoggingTime {
@@ -79,8 +112,8 @@ struct ActiveTimerView: View {
             .padding(12)
             .background {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(.red.opacity(0.04))
-                    .strokeBorder(.red.opacity(0.15), lineWidth: 1)
+                    .fill(accentColor.opacity(0.04))
+                    .strokeBorder(accentColor.opacity(0.15), lineWidth: 1)
             }
             .padding(.horizontal, 12)
             .padding(.top, 8)
@@ -89,6 +122,24 @@ struct ActiveTimerView: View {
             } message: {
                 Text(errorText)
             }
+        }
+    }
+
+    private var frozenElapsed: String {
+        guard let start = appState.activeTimerStart else { return "0:00" }
+        var totalPause = appState.timerAccumulatedPause
+        if let pauseStart = appState.timerPauseStart {
+            totalPause += Date().timeIntervalSince(pauseStart)
+        }
+        let elapsed = Date().timeIntervalSince(start) - totalPause
+        let secs = max(0, Int(elapsed))
+        let h = secs / 3600
+        let m = (secs % 3600) / 60
+        let s = secs % 60
+        if h > 0 {
+            return String(format: "%d:%02d:%02d", h, m, s)
+        } else {
+            return String(format: "%d:%02d", m, s)
         }
     }
 

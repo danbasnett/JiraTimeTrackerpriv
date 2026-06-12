@@ -1,0 +1,20 @@
+{
+  "name": "jiratimetracker-streamdeck",
+  "version": "1.0.0",
+  "description": "Stream Deck plugin for JiraTimeTracker",
+  "main": "com.danbasnett.jiratimetracker.sdPlugin/bin/plugin.js",
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-typescript": "^12.0.0",
+    "rollup": "^4.0.0",
+    "tslib": "^2.8.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@elgato/streamdeck": "^2.0.0"
+  }
+}
