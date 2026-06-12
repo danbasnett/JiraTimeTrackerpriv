@@ -72,6 +72,10 @@ final class AppState {
         return max(0, Int(Date().timeIntervalSince(start) - totalPause))
     }
 
+    // MARK: - Settings
+
+    var autoTransitionOnStart: Bool = UserDefaults.standard.bool(forKey: "autoTransitionOnStart")
+
     // MARK: - UI State
 
     var isLoading: Bool = false
@@ -225,6 +229,30 @@ final class AppState {
         saveTimerState()
         successMessage = nil
         WidgetCenter.shared.reloadAllTimelines()
+
+        // Auto-transition "To Do" issues to "In Progress" if enabled
+        if autoTransitionOnStart,
+           let statusCategory = issue.fields.status?.statusCategory?.key,
+           statusCategory == "new" {
+            Task {
+                await autoTransitionToInProgress(issueKey: issue.key)
+            }
+        }
+    }
+
+    private func autoTransitionToInProgress(issueKey: String) async {
+        guard let client = apiClient else { return }
+        do {
+            let transitions = try await client.getTransitions(issueKey: issueKey)
+            // Find a transition whose target status category is "indeterminate" (In Progress)
+            if let inProgressTransition = transitions.first(where: { $0.to.statusCategory?.key == "indeterminate" }) {
+                try await client.transitionIssue(issueKey: issueKey, transitionId: inProgressTransition.id)
+                // Refresh issues to show updated status
+                await fetchIssues()
+            }
+        } catch {
+            // Non-critical — don't show error for auto-transition failure
+        }
     }
 
     func pauseTimer() {

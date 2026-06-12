@@ -71,6 +71,22 @@ struct JiraIssueType: Codable, Sendable {
     let iconUrl: String?
 }
 
+struct JiraTransitionsResponse: Codable, Sendable {
+    let transitions: [JiraTransition]
+}
+
+struct JiraTransition: Codable, Sendable {
+    let id: String
+    let name: String
+    let to: JiraTransitionStatus
+}
+
+struct JiraTransitionStatus: Codable, Sendable {
+    let id: String
+    let name: String
+    let statusCategory: JiraStatusCategory?
+}
+
 struct JiraTimeTracking: Codable, Sendable {
     let originalEstimate: String?
     let remainingEstimate: String?

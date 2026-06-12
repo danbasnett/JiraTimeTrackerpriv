@@ -81,6 +81,18 @@ struct SettingsView: View {
 
             if appState.isConfigured {
                 Section {
+                    @Bindable var state = appState
+                    Toggle("Move \"To Do\" issues to \"In Progress\" when starting a timer", isOn: $state.autoTransitionOnStart)
+                        .onChange(of: appState.autoTransitionOnStart) { _, newValue in
+                            UserDefaults.standard.set(newValue, forKey: "autoTransitionOnStart")
+                        }
+                } header: {
+                    Text("Behavior")
+                } footer: {
+                    Text("Automatically transitions issues from To Do to In Progress when you start tracking time.")
+                }
+
+                Section {
                     Button("Disconnect", role: .destructive) {
                         appState.clearCredentials()
                         baseURL = ""

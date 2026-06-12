@@ -89,6 +89,20 @@ actor JiraAPIClient {
         }
     }
 
+    func getTransitions(issueKey: String) async throws -> [JiraTransition] {
+        let data = try await performRequest(path: "/rest/api/3/issue/\(issueKey)/transitions")
+        let response = try JSONDecoder().decode(JiraTransitionsResponse.self, from: data)
+        return response.transitions
+    }
+
+    func transitionIssue(issueKey: String, transitionId: String) async throws {
+        let body: [String: Any] = [
+            "transition": ["id": transitionId]
+        ]
+        let bodyData = try JSONSerialization.data(withJSONObject: body)
+        _ = try await performRequest(path: "/rest/api/3/issue/\(issueKey)/transitions", method: "POST", body: bodyData)
+    }
+
     func logWork(issueKey: String, timeSpentSeconds: Int, comment: String?, started: Date) async throws {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
