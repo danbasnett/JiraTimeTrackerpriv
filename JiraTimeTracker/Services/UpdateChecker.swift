@@ -123,6 +123,13 @@ final class UpdateChecker {
             }
             try fm.moveItem(at: tempURL, to: zipPath)
 
+            // Remove quarantine attribute from the zip
+            let xattrZip = Process()
+            xattrZip.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
+            xattrZip.arguments = ["-d", "com.apple.quarantine", zipPath.path]
+            try? xattrZip.run()
+            xattrZip.waitUntilExit()
+
             // Unzip
             let unzipDir = tempDir.appendingPathComponent("extracted")
             try fm.createDirectory(at: unzipDir, withIntermediateDirectories: true)
@@ -141,9 +148,23 @@ final class UpdateChecker {
                 return
             }
 
-            // Find the .app in extracted directory
-            let contents = try fm.contentsOfDirectory(at: unzipDir, includingPropertiesForKeys: nil)
-            guard let newApp = contents.first(where: { $0.lastPathComponent.hasSuffix(".app") }) else {
+            // Find the .app — check both top level and one level deep
+            let newApp: URL? = try {
+                let topLevel = try fm.contentsOfDirectory(at: unzipDir, includingPropertiesForKeys: nil)
+                if let app = topLevel.first(where: { $0.lastPathComponent.hasSuffix(".app") }) {
+                    return app
+                }
+                // Check one level deeper (some zips nest in a folder)
+                for dir in topLevel where dir.hasDirectoryPath {
+                    let nested = try fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+                    if let app = nested.first(where: { $0.lastPathComponent.hasSuffix(".app") }) {
+                        return app
+                    }
+                }
+                return nil
+            }()
+
+            guard let newApp else {
                 await MainActor.run {
                     isDownloading = false
                     lastCheckResult = "Update package invalid"
@@ -151,21 +172,45 @@ final class UpdateChecker {
                 return
             }
 
-            let currentAppPath = Bundle.main.bundlePath
+            // Remove quarantine from extracted app
+            let xattrApp = Process()
+            xattrApp.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
+            xattrApp.arguments = ["-r", "-d", "com.apple.quarantine", newApp.path]
+            try? xattrApp.run()
+            xattrApp.waitUntilExit()
+
+            // Resolve the real app path (handles App Translocation)
+            let currentAppPath = resolveAppPath()
             let newAppPath = newApp.path
 
-            // Build a script that:
-            // 1. Waits for this process to exit
-            // 2. Replaces the app
-            // 3. Relaunches it
-            // 4. Cleans up the temp directory
+            let logFile = tempDir.appendingPathComponent("update.log").path
             let pid = ProcessInfo.processInfo.processIdentifier
+
+            let esc = { (s: String) in s.replacingOccurrences(of: "'", with: "'\\''") }
+
             let script = """
+            exec > '\(esc(logFile))' 2>&1
+            echo "Update started at $(date)"
+            echo "PID to wait for: \(pid)"
+            echo "Current app: \(esc(currentAppPath))"
+            echo "New app: \(esc(newAppPath))"
+
             while kill -0 \(pid) 2>/dev/null; do sleep 0.2; done
-            rm -rf '\(currentAppPath.replacingOccurrences(of: "'", with: "'\\''"))'
-            cp -R '\(newAppPath.replacingOccurrences(of: "'", with: "'\\''"))' '\(currentAppPath.replacingOccurrences(of: "'", with: "'\\''"))'
-            open '\(currentAppPath.replacingOccurrences(of: "'", with: "'\\''"))'
-            rm -rf '\(tempDir.path.replacingOccurrences(of: "'", with: "'\\''"))'
+            echo "App exited, replacing..."
+
+            rm -rf '\(esc(currentAppPath))'
+            if [ $? -ne 0 ]; then echo "ERROR: rm failed"; exit 1; fi
+
+            cp -R '\(esc(newAppPath))' '\(esc(currentAppPath))'
+            if [ $? -ne 0 ]; then echo "ERROR: cp failed"; exit 1; fi
+
+            echo "Launching updated app..."
+            sleep 0.5
+            open '\(esc(currentAppPath))'
+
+            echo "Cleaning up temp dir..."
+            rm -rf '\(esc(tempDir.path))'
+            echo "Done"
             """
 
             let helper = Process()
@@ -183,6 +228,32 @@ final class UpdateChecker {
                 lastCheckResult = "Update failed: \(error.localizedDescription)"
             }
         }
+    }
+
+    /// Resolve the real app bundle path, handling macOS App Translocation.
+    /// When an app is opened from a quarantined location, macOS copies it to a
+    /// randomized read-only path. We need to find the original location to replace it.
+    private func resolveAppPath() -> String {
+        let bundlePath = Bundle.main.bundlePath
+
+        // Check if we're in a translocated path
+        // Translocated paths look like: /private/var/folders/.../AppTranslocation/.../d/JiraTimeTracker.app
+        if bundlePath.contains("/AppTranslocation/") {
+            // Try to find the app in /Applications first
+            let appName = (bundlePath as NSString).lastPathComponent
+            let applicationsPath = "/Applications/\(appName)"
+            if FileManager.default.fileExists(atPath: applicationsPath) {
+                return applicationsPath
+            }
+            // Try user Applications
+            let userAppsPath = NSHomeDirectory() + "/Applications/\(appName)"
+            if FileManager.default.fileExists(atPath: userAppsPath) {
+                return userAppsPath
+            }
+        }
+
+        // Not translocated — use the bundle path as-is
+        return bundlePath
     }
 
     private func isNewer(remote: String, current: String) -> Bool {

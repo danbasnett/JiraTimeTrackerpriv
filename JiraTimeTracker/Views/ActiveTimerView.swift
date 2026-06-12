@@ -63,6 +63,19 @@ struct ActiveTimerView: View {
                 .padding(.top, 8)
 
                 HStack(spacing: 8) {
+                    Menu {
+                        Button("− 1 min") { appState.subtractTime(minutes: 1) }
+                        Button("− 5 min") { appState.subtractTime(minutes: 5) }
+                        Button("− 15 min") { appState.subtractTime(minutes: 15) }
+                        Button("− 30 min") { appState.subtractTime(minutes: 30) }
+                        Button("− 60 min") { appState.subtractTime(minutes: 60) }
+                    } label: {
+                        Label("Subtract", systemImage: "minus.circle")
+                            .font(.caption)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+
                     Spacer()
 
                     Button {

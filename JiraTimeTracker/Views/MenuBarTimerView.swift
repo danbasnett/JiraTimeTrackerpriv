@@ -3,8 +3,7 @@ import SwiftUI
 struct MenuBarTimerView: View {
     @Environment(AppState.self) private var appState
     @Environment(UpdateChecker.self) private var updateChecker
-    @State private var showError: Bool = false
-    @State private var errorText: String = ""
+    @State private var errorText: String?
     @State private var menuBarSearchText: String = ""
 
     var body: some View {
@@ -26,16 +25,12 @@ struct MenuBarTimerView: View {
             footerSection
                 .padding(8)
         }
-        .frame(width: 340)
+        .frame(width: 360)
         .onAppear {
+            errorText = nil
             if appState.isConfigured {
                 Task { await appState.refreshData() }
             }
-        }
-        .alert("Error", isPresented: $showError) {
-            Button("OK") {}
-        } message: {
-            Text(errorText)
         }
     }
 
@@ -65,9 +60,7 @@ struct MenuBarTimerView: View {
                         Spacer()
 
                         if appState.isTimerPaused {
-                            // Show frozen time when paused
-                            let elapsed = timerElapsedWhilePaused
-                            Text(elapsed)
+                            Text(timerElapsedWhilePaused)
                                 .font(.system(.title3, design: .monospaced))
                                 .fontWeight(.semibold)
                                 .monospacedDigit()
@@ -93,11 +86,26 @@ struct MenuBarTimerView: View {
                     .font(.caption)
                     .lineLimit(2...3)
 
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
+                        // Subtract time menu
+                        Menu {
+                            Button("− 1 min") { appState.subtractTime(minutes: 1) }
+                            Button("− 5 min") { appState.subtractTime(minutes: 5) }
+                            Button("− 15 min") { appState.subtractTime(minutes: 15) }
+                            Button("− 30 min") { appState.subtractTime(minutes: 30) }
+                            Button("− 60 min") { appState.subtractTime(minutes: 60) }
+                        } label: {
+                            Image(systemName: "minus.circle")
+                                .font(.caption)
+                        }
+                        .menuStyle(.borderlessButton)
+                        .fixedSize()
+
                         Spacer()
 
                         Button("Discard") {
                             appState.discardTimer()
+                            errorText = nil
                         }
                         .controlSize(.small)
 
@@ -142,6 +150,28 @@ struct MenuBarTimerView: View {
                         .foregroundStyle(.secondary)
                     Spacer()
                 }
+            }
+
+            // Inline error banner (replaces .alert)
+            if let error = errorText {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.yellow)
+                        .font(.caption)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button {
+                        errorText = nil
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.top, 6)
             }
 
             if let success = appState.successMessage {
@@ -196,7 +226,7 @@ struct MenuBarTimerView: View {
                 }
             }
             .padding(6)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
 
             HStack(spacing: 4) {
                 menuFilterChip("Open", isSelected: appState.statusFilter == .open) {
@@ -313,16 +343,16 @@ struct MenuBarTimerView: View {
 
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(appState.filteredIssues.prefix(20)) { issue in
+                            ForEach(appState.filteredIssues.prefix(50)) { issue in
                                 menuIssueRow(issue)
-                                if issue.id != appState.filteredIssues.prefix(20).last?.id {
+                                if issue.id != appState.filteredIssues.prefix(50).last?.id {
                                     Divider()
                                         .padding(.leading, 36)
                                 }
                             }
                         }
                     }
-                    .frame(maxHeight: 360)
+                    .frame(minHeight: 100, maxHeight: 500)
                 }
             } else if !appState.issues.isEmpty {
                 HStack {
@@ -427,7 +457,7 @@ struct MenuBarTimerView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 6)
-                    .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                    .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
                 .disabled(updateChecker.isDownloading)
@@ -526,7 +556,6 @@ struct MenuBarTimerView: View {
         }
     }
 
-    /// Formatted elapsed time for display when paused (timer is frozen)
     private var timerElapsedWhilePaused: String {
         guard let start = appState.activeTimerStart else { return "0:00" }
         var totalPause = appState.timerAccumulatedPause
@@ -549,9 +578,9 @@ struct MenuBarTimerView: View {
         Task {
             do {
                 _ = try await appState.stopAndLogTimer()
+                errorText = nil
             } catch {
                 errorText = error.localizedDescription
-                showError = true
             }
         }
     }

@@ -232,6 +232,14 @@ final class AppState {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// Subtract minutes from the active timer by increasing the accumulated pause.
+    func subtractTime(minutes: Int) {
+        guard isTimerRunning else { return }
+        timerAccumulatedPause += TimeInterval(minutes * 60)
+        saveTimerState()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     func stopAndLogTimer() async throws -> Int {
         guard let issue = activeTimerIssue, let start = activeTimerStart else {
             throw TimerError.noActiveTimer
