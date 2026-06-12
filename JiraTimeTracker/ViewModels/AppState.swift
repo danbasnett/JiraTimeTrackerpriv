@@ -240,6 +240,14 @@ final class AppState {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// Add minutes to the active timer by decreasing the accumulated pause.
+    func addTime(minutes: Int) {
+        guard isTimerRunning else { return }
+        timerAccumulatedPause = max(0, timerAccumulatedPause - TimeInterval(minutes * 60))
+        saveTimerState()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     func stopAndLogTimer() async throws -> Int {
         guard let issue = activeTimerIssue, let start = activeTimerStart else {
             throw TimerError.noActiveTimer

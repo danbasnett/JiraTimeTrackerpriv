@@ -3,7 +3,6 @@ import SwiftUI
 struct MenuBarTimerView: View {
     @Environment(AppState.self) private var appState
     @Environment(UpdateChecker.self) private var updateChecker
-    @State private var errorText: String?
     @State private var menuBarSearchText: String = ""
 
     var body: some View {
@@ -27,7 +26,7 @@ struct MenuBarTimerView: View {
         }
         .frame(width: 360)
         .onAppear {
-            errorText = nil
+            appState.errorMessage = nil
             if appState.isConfigured {
                 Task { await appState.refreshData() }
             }
@@ -37,108 +36,140 @@ struct MenuBarTimerView: View {
     // MARK: - Timer Section
 
     private var timerSection: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 8) {
             if let issue = appState.activeTimerIssue, let _ = appState.activeTimerStart {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(appState.isTimerPaused ? .orange : .red)
-                            .frame(width: 7, height: 7)
-                            .shadow(color: (appState.isTimerPaused ? Color.orange : Color.red).opacity(0.5), radius: 3)
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(appState.isTimerPaused ? .orange : .red)
+                        .frame(width: 7, height: 7)
+                        .shadow(color: (appState.isTimerPaused ? Color.orange : Color.red).opacity(0.5), radius: 3)
 
-                        Text(issue.key)
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.secondary)
+                    Text(issue.key)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.secondary)
 
-                        if appState.isTimerPaused {
-                            Text("PAUSED")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(.orange)
-                        }
-
-                        Spacer()
-
-                        if appState.isTimerPaused {
-                            Text(timerElapsedWhilePaused)
-                                .font(.system(.title3, design: .monospaced))
-                                .fontWeight(.semibold)
-                                .monospacedDigit()
-                                .foregroundStyle(.orange)
-                        } else if let effectiveStart = appState.effectiveTimerStart {
-                            Text(effectiveStart, style: .timer)
-                                .font(.system(.title3, design: .monospaced))
-                                .fontWeight(.semibold)
-                                .monospacedDigit()
-                                .foregroundStyle(.red)
-                        }
+                    if appState.isTimerPaused {
+                        Text("PAUSED")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.orange)
                     }
 
-                    Text(issue.fields.summary)
-                        .font(.callout)
-                        .lineLimit(2)
+                    Spacer()
 
-                    TextField("Work description (optional)", text: Binding(
-                        get: { appState.workDescription },
-                        set: { appState.workDescription = $0 }
-                    ), axis: .vertical)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.caption)
-                    .lineLimit(2...3)
+                    if appState.isTimerPaused {
+                        Text(timerElapsedWhilePaused)
+                            .font(.system(.title3, design: .monospaced))
+                            .fontWeight(.semibold)
+                            .monospacedDigit()
+                            .foregroundStyle(.orange)
+                    } else if let effectiveStart = appState.effectiveTimerStart {
+                        Text(effectiveStart, style: .timer)
+                            .font(.system(.title3, design: .monospaced))
+                            .fontWeight(.semibold)
+                            .monospacedDigit()
+                            .foregroundStyle(.red)
+                    }
+                }
 
+                Text(issue.fields.summary)
+                    .font(.callout)
+                    .lineLimit(2)
+
+                TextField("Work description (optional)", text: Binding(
+                    get: { appState.workDescription },
+                    set: { appState.workDescription = $0 }
+                ), axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+                .font(.caption)
+                .lineLimit(2...3)
+
+                HStack(spacing: 6) {
+                    // Adjust time menus
+                    Menu {
+                        Button("+ 1 min") { appState.addTime(minutes: 1) }
+                        Button("+ 5 min") { appState.addTime(minutes: 5) }
+                        Button("+ 15 min") { appState.addTime(minutes: 15) }
+                        Button("+ 30 min") { appState.addTime(minutes: 30) }
+                        Button("+ 60 min") { appState.addTime(minutes: 60) }
+                    } label: {
+                        Image(systemName: "plus.circle")
+                            .font(.caption)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+
+                    Menu {
+                        Button("− 1 min") { appState.subtractTime(minutes: 1) }
+                        Button("− 5 min") { appState.subtractTime(minutes: 5) }
+                        Button("− 15 min") { appState.subtractTime(minutes: 15) }
+                        Button("− 30 min") { appState.subtractTime(minutes: 30) }
+                        Button("− 60 min") { appState.subtractTime(minutes: 60) }
+                    } label: {
+                        Image(systemName: "minus.circle")
+                            .font(.caption)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+
+                    Spacer()
+
+                    Button("Discard") {
+                        appState.discardTimer()
+                        appState.errorMessage = nil
+                    }
+                    .controlSize(.small)
+
+                    Button {
+                        if appState.isTimerPaused {
+                            appState.resumeTimer()
+                        } else {
+                            appState.pauseTimer()
+                        }
+                    } label: {
+                        Label(
+                            appState.isTimerPaused ? "Resume" : "Pause",
+                            systemImage: appState.isTimerPaused ? "play.fill" : "pause.fill"
+                        )
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .tint(.orange)
+
+                    Button {
+                        stopAndLog()
+                    } label: {
+                        if appState.isLoggingTime {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Text("Stop & Log")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .tint(.red)
+                    .disabled(appState.isLoggingTime)
+                }
+
+                // Error shown inline within the timer section
+                if let error = appState.errorMessage {
                     HStack(spacing: 6) {
-                        // Subtract time menu
-                        Menu {
-                            Button("− 1 min") { appState.subtractTime(minutes: 1) }
-                            Button("− 5 min") { appState.subtractTime(minutes: 5) }
-                            Button("− 15 min") { appState.subtractTime(minutes: 15) }
-                            Button("− 30 min") { appState.subtractTime(minutes: 30) }
-                            Button("− 60 min") { appState.subtractTime(minutes: 60) }
-                        } label: {
-                            Image(systemName: "minus.circle")
-                                .font(.caption)
-                        }
-                        .menuStyle(.borderlessButton)
-                        .fixedSize()
-
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.yellow)
+                            .font(.caption)
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         Spacer()
-
-                        Button("Discard") {
-                            appState.discardTimer()
-                            errorText = nil
-                        }
-                        .controlSize(.small)
-
                         Button {
-                            if appState.isTimerPaused {
-                                appState.resumeTimer()
-                            } else {
-                                appState.pauseTimer()
-                            }
+                            appState.errorMessage = nil
                         } label: {
-                            Label(
-                                appState.isTimerPaused ? "Resume" : "Pause",
-                                systemImage: appState.isTimerPaused ? "play.fill" : "pause.fill"
-                            )
+                            Image(systemName: "xmark")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                        .tint(.orange)
-
-                        Button {
-                            stopAndLog()
-                        } label: {
-                            if appState.isLoggingTime {
-                                ProgressView()
-                                    .controlSize(.small)
-                            } else {
-                                Text("Stop & Log")
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                        .tint(.red)
-                        .disabled(appState.isLoggingTime)
+                        .buttonStyle(.plain)
                     }
                 }
             } else {
@@ -150,28 +181,6 @@ struct MenuBarTimerView: View {
                         .foregroundStyle(.secondary)
                     Spacer()
                 }
-            }
-
-            // Inline error banner (replaces .alert)
-            if let error = errorText {
-                HStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.yellow)
-                        .font(.caption)
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Button {
-                        errorText = nil
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.top, 6)
             }
 
             if let success = appState.successMessage {
@@ -192,7 +201,6 @@ struct MenuBarTimerView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.top, 6)
             }
         }
     }
@@ -578,9 +586,9 @@ struct MenuBarTimerView: View {
         Task {
             do {
                 _ = try await appState.stopAndLogTimer()
-                errorText = nil
+                appState.errorMessage = nil
             } catch {
-                errorText = error.localizedDescription
+                appState.errorMessage = error.localizedDescription
             }
         }
     }
