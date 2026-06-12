@@ -10,8 +10,8 @@ struct JiraTimeTrackerApp: App {
             ContentView()
                 .environment(appState)
                 .environment(updateChecker)
-                .task {
-                    await updateChecker.checkForUpdates()
+                .onAppear {
+                    updateChecker.startPeriodicChecks()
                 }
         }
 

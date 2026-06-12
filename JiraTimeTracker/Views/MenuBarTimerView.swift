@@ -373,25 +373,32 @@ struct MenuBarTimerView: View {
         VStack(spacing: 2) {
             if updateChecker.updateAvailable {
                 Button {
-                    if let url = URL(string: updateChecker.releaseURL) {
-                        NSWorkspace.shared.open(url)
-                    }
+                    Task { await updateChecker.downloadAndInstall() }
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.down.circle.fill")
                             .foregroundStyle(.blue)
-                        Text("Update available: v\(updateChecker.latestVersion)")
-                            .font(.caption)
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                        if updateChecker.isDownloading {
+                            Text("Downloading...")
+                                .font(.caption)
+                            Spacer()
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Text("Install v\(updateChecker.latestVersion)")
+                                .font(.caption)
+                            Spacer()
+                            Image(systemName: "arrow.down.to.line")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 6)
                     .background(.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
+                .disabled(updateChecker.isDownloading)
                 .padding(.bottom, 4)
             }
 

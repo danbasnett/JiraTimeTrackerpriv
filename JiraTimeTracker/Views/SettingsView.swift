@@ -100,19 +100,44 @@ struct SettingsView: View {
                 }
 
                 if updateChecker.updateAvailable {
-                    Link(destination: URL(string: updateChecker.releaseURL)!) {
+                    Button {
+                        Task { await updateChecker.downloadAndInstall() }
+                    } label: {
                         HStack {
-                            Label("Update available: v\(updateChecker.latestVersion)", systemImage: "arrow.down.circle.fill")
-                                .foregroundStyle(.blue)
+                            Label("Install v\(updateChecker.latestVersion)", systemImage: "arrow.down.circle.fill")
                             Spacer()
-                            Image(systemName: "arrow.up.right.square")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            if updateChecker.isDownloading {
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
                         }
                     }
+                    .disabled(updateChecker.isDownloading)
+
+                    if updateChecker.isDownloading {
+                        Text("Downloading update...")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 } else {
-                    Button("Check for Updates") {
+                    Button {
                         Task { await updateChecker.checkForUpdates() }
+                    } label: {
+                        HStack {
+                            Text("Check for Updates")
+                            Spacer()
+                            if updateChecker.isChecking {
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                        }
+                    }
+                    .disabled(updateChecker.isChecking)
+
+                    if let result = updateChecker.lastCheckResult {
+                        Text(result)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
                     }
                 }
             } header: {
